@@ -1,6 +1,6 @@
 # Haku — frontend-main
 
-A quiet, streaming-first workspace for the **curro-ai** agent. Chat, memory, knowledge, and
+A quiet, streaming-first workspace for the **gptloop** agent. Chat, memory, knowledge, and
 skills, with a resilient, resumable networking layer so the agent keeps running even when the
 browser refreshes, disconnects, or the network gets slow.
 
@@ -11,8 +11,8 @@ Built with **React 19 · Vite 8 · Tailwind v4 · Zustand 5 · TypeScript 7**.
 ## Quick start
 
 ```bash
-# 1) start the backend (in ../curro-ai)
-cd ../curro-ai && npm install && npm start      # http://localhost:8787
+# 1) start the backend (in ../gptloop)
+cd ../gptloop && npm install && npm start      # http://localhost:8787
 
 # 2) start this frontend
 npm install
@@ -27,7 +27,7 @@ The browser only ever calls this app's own `/api/*` routes; Vite proxies them to
 Copy `.env.example` → `.env`:
 
 ```
-CURRO_API_URL=http://localhost:8787   # backend base URL (proxied)
+GPTLOOP_API_URL=http://localhost:8787   # backend base URL (proxied)
 VITE_PORT=5173                        # dev server port
 ```
 

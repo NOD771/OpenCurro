@@ -32,8 +32,8 @@ export function toCustomProviderConfig(
 }
 
 /**
- * Static fallback list of every provider the curro-ai backend supports, mirroring
- * `curro-ai/src/agents/providers/registry.ts`. The Settings modal fetches the live
+ * Static fallback list of every provider the gptloop backend supports, mirroring
+ * `gptloop/src/agents/providers/registry.ts`. The Settings modal fetches the live
  * list from the backend, but falls back to this so the dropdown is always populated
  * (e.g. before the first fetch resolves or if the backend is unreachable).
  */

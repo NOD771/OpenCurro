@@ -134,7 +134,7 @@ export interface SubAgentRun {
   background?: boolean;
   /** True when the main agent shared its conversation context (send_my_context=true) with this run. */
   sentContext?: boolean;
-  /** Workspace-relative ".curro/sub-agent" file where a background run writes its final output. */
+  /** Workspace-relative ".gptloop/sub-agent" file where a background run writes its final output. */
   outputFile?: string;
 }
 
@@ -644,7 +644,7 @@ export interface StreamRequest {
   enable_send_message_to_team?: "no" | "yes";
 }
 
-/** SSE event payloads emitted by the curro-ai agent. */
+/** SSE event payloads emitted by the gptloop agent. */
 export interface SSEEventData {
   _event_id?: number;
   value?: string;
@@ -673,7 +673,7 @@ export interface SSEEventData {
   background?: boolean;
   /** Whether the main agent shared its conversation context (send_my_context=true) with the run. */
   context_shared?: boolean;
-  /** Workspace-relative ".curro/sub-agent" file where a background run writes its output. */
+  /** Workspace-relative ".gptloop/sub-agent" file where a background run writes its output. */
   output_file?: string;
   /**
    * Parent tool-call id set on every sub_agent_* event that belongs to a call_multiple_sub_agents
