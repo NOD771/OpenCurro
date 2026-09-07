@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import type { AppConfig } from "../config.js";
 import { AgentRunner, type RunAgentRequest } from "../agents/agent.js";
+import type { CustomRoleConfig } from "../agents/systemprompt.js";
 import { SessionEventBuffer } from "../services/eventBuffer.js";
 import type { SessionStore, StoredMessage } from "../services/sessionStore.js";
 import type { PlanApprovalStore } from "../services/planApprovalStore.js";
@@ -67,6 +68,11 @@ interface StreamBody {
   memory?: unknown;
   knowledge?: unknown;
   enable_reuse_sub_agent_session?: unknown;
+  /**
+   * The active Custom Role selected in the frontend, applied to the SAME Main Agent this turn.
+   * A role/expertise/behavior overlay on the existing agent — never a new agent or model.
+   */
+  custom_role?: unknown;
   /** When true (with a valid agent_team), run this turn as a multi-agent team instead of one agent. */
   multi_agent?: unknown;
   /** The active agent team definition (head + members) sent from the frontend. */
@@ -107,6 +113,28 @@ function normalizeTeam(raw: unknown): AgentTeamDefinition | null {
     leader_system_prompt:
       typeof record.leader_system_prompt === "string" ? record.leader_system_prompt : "",
     members,
+  };
+}
+
+/**
+ * Defensively coerce the client-provided Custom Role into a safe value, or `null`. A role only
+ * counts when it carries a non-empty system prompt (accepts either `system_prompt` or the camelCase
+ * `systemPrompt`). Name and description are optional trimmed strings.
+ */
+function normalizeCustomRole(raw: unknown): CustomRoleConfig | null {
+  if (!raw || typeof raw !== "object") return null;
+  const record = raw as Record<string, unknown>;
+  const systemPrompt =
+    typeof record.system_prompt === "string"
+      ? record.system_prompt
+      : typeof record.systemPrompt === "string"
+        ? (record.systemPrompt as string)
+        : "";
+  if (systemPrompt.trim().length === 0) return null;
+  return {
+    name: typeof record.name === "string" ? record.name.trim() : "",
+    description: typeof record.description === "string" ? record.description.trim() : "",
+    systemPrompt,
   };
 }
 
@@ -404,6 +432,7 @@ export function buildChatRouter(
         enableReuseSubAgentSession:
           body.enable_reuse_sub_agent_session === true ||
           body.enable_reuse_sub_agent_session === "yes",
+        customRole: normalizeCustomRole(body.custom_role),
       };
 
       // Fire-and-forget the autonomous agent loop; the response streams from the buffer.

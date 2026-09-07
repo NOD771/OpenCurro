@@ -9,6 +9,7 @@ import { KnowledgePanel } from "@/components/panels/KnowledgePanel";
 import { AgentsPanel } from "@/components/panels/AgentsPanel";
 import { SkillsPanel } from "@/components/panels/SkillsPanel";
 import { TeamsPanel } from "@/components/panels/TeamsPanel";
+import { RolesPanel } from "@/components/panels/RolesPanel";
 import { SettingsModal } from "@/components/editors/SettingsModal";
 import { TodoPanel } from "@/components/overlays/TodoPanel";
 import { FilesPanel } from "@/components/overlays/FilesPanel";
@@ -94,6 +95,7 @@ export function App() {
               {section === "agents" && <AgentsPanel />}
               {section === "skills" && <SkillsPanel />}
               {section === "teams" && <TeamsPanel />}
+              {section === "roles" && <RolesPanel />}
             </div>
           )}
         </main>
