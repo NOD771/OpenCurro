@@ -18,12 +18,12 @@ calling and true token-by-token SSE streaming.
   replayable event buffer so clients can reconnect (`since_event_id`).
 - **Autonomous harness**: up to `MAX_ITERATIONS` (default **1000**) Thought→Action→Observation cycles per turn.
 - **Workspace-sandboxed file tools**: every path is resolved inside `WORKSPACE_ROOT` (default
-  `curro-ai/workspace`) and cannot escape it — no permission errors.
+  `gptloop/workspace`) and cannot escape it — no permission errors.
 
 ## Project layout
 
 ```
-curro-ai/
+gptloop/
 ├── package.json / tsconfig.json / .env.example
 └── src/
     ├── index.ts               # Express bootstrap
@@ -41,7 +41,7 @@ curro-ai/
 ## Setup
 
 ```bash
-cd curro-ai
+cd gptloop
 cp .env.example .env      # optional; sane defaults are built in
 npm install
 npm run dev               # http://localhost:8787 (tsx watch)
@@ -55,7 +55,7 @@ npm run typecheck         # TypeScript 7 type check
 | Variable          | Default                | Description                                        |
 | ----------------- | ---------------------- | -------------------------------------------------- |
 | `PORT`            | `8787`                 | Express port                                       |
-| `WORKSPACE_ROOT`  | `curro-ai/workspace`   | Directory all file tools are sandboxed to          |
+| `WORKSPACE_ROOT`  | `gptloop/workspace`   | Directory all file tools are sandboxed to          |
 | `MAX_ITERATIONS`  | `1000`                 | Max ReAct iterations per turn                      |
 | `CORS_ORIGINS`    | `*`                    | Comma-separated allowed origins, or `*`            |
 | `SHELL_TIMEOUT_MS`| `180000`               | Timeout for `shall_tool` foreground commands       |

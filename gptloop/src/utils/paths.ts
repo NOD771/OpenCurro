@@ -5,7 +5,7 @@ import path from "node:path";
  * never escapes the workspace. Accepts:
  *   - relative paths ("src/app.ts")
  *   - absolute paths already inside the workspace
- *   - "absolute looking" paths ("/curro-ai/workspace/x", "/foo") which are treated
+ *   - "absolute looking" paths ("/gptloop/workspace/x", "/foo") which are treated
  *     as relative to the workspace so the model can be sloppy without breaking things.
  *
  * Throws when the resolved path would escape the workspace root.
