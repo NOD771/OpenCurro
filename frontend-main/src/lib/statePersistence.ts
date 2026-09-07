@@ -34,6 +34,8 @@ const SYNC_KEYS = [
   "customProviders",
   "agentTeams",
   "customRoles",
+  "customAgents",
+  "activeCustomAgentId",
 ] as const;
 
 type SyncKey = (typeof SYNC_KEYS)[number];

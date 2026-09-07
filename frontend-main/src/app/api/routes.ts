@@ -38,6 +38,24 @@ export const API_ROUTES = {
     path: "/api/tools",
     description: "List the tools a sub-agent can be granted (restricted sub-agent tools excluded).",
   },
+  customAgentToolsList: {
+    name: "tools.customAgent",
+    method: "GET",
+    path: "/api/tools/custom-agent",
+    description: "List the tools a Custom Agent can be granted (all main-agent tools minus multi-agent tools).",
+  },
+  systemPrompt: {
+    name: "systemPrompt.get",
+    method: "GET",
+    path: "/api/system-prompt",
+    description: "Fetch the built Main Agent system prompt (used to pre-fill a Custom Agent's prompt).",
+  },
+  customAgentsList: {
+    name: "customAgents.list",
+    method: "GET",
+    path: "/api/custom-agents",
+    description: "List the persisted Custom Agents (top-level, user-created Main Agents).",
+  },
   chatStream: {
     name: "chat.stream",
     method: "POST",

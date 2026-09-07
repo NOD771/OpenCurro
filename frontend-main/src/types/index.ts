@@ -260,6 +260,40 @@ export interface BackendCustomRole {
   system_prompt: string;
 }
 
+/**
+ * A user-created Custom Agent, stored in the backend SQLite database (app_state `customAgents`).
+ *
+ * A Custom Agent is a TOP-LEVEL, independently-configured Main Agent — NOT a sub-agent, child agent,
+ * or team member. It runs through the same core runtime as the built-in Main Agent; the only
+ * differences are configuration-level: name, description, system prompt, and selected tools. When a
+ * Custom Agent is the active agent, chat turns are executed as that independent agent.
+ */
+export interface CustomAgent {
+  id: string;
+  /** Human-readable agent name (required). */
+  name: string;
+  /** Short description of what the agent does. */
+  description: string;
+  /**
+   * The full, editable system prompt. Pre-filled from the Main Agent's system prompt when the
+   * creation UI opens, then freely edited. Used verbatim as the agent's system prompt.
+   */
+  systemPrompt: string;
+  /** Tool identifiers the agent may use (resolved against the live registry at run time). */
+  selectedTools: string[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Custom-agent definition in the backend/wire format sent with a turn when a Custom Agent is active. */
+export interface BackendCustomAgent {
+  id: string;
+  name: string;
+  description: string;
+  system_prompt: string;
+  selected_tools: string[];
+}
+
 /** Agent-team definition in the backend/wire format sent with each turn. */
 export interface BackendTeam {
   id: string;
@@ -679,6 +713,12 @@ export interface StreamRequest {
   agent_team?: BackendTeam;
   /** Mirrors settings.enableSendMessageToTeam; gates the send_message_to_team tool this turn. */
   enable_send_message_to_team?: "no" | "yes";
+  /**
+   * The active Custom Agent (a top-level, user-created Main Agent) for this turn. When present, the
+   * turn runs as that independent agent — its own system prompt + selected tools. Absent when the
+   * default Main Agent is active.
+   */
+  custom_agent?: BackendCustomAgent;
 }
 
 /** SSE event payloads emitted by the gptloop agent. */

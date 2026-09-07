@@ -20,6 +20,8 @@ export const APP_STATE_KEYS = [
   "currentSessionId",
   "agentTeams",
   "customRoles",
+  "customAgents",
+  "activeCustomAgentId",
 ] as const;
 
 export type AppStateKey = (typeof APP_STATE_KEYS)[number];
