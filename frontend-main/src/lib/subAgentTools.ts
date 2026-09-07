@@ -50,8 +50,8 @@ export function humanizeToolName(name: string): string {
 }
 
 /**
- * The bundled fallback list of the 28 tools a sub-agent may be granted (all registered tools minus
- * the 14 restricted sub-agent tools). Used only when the backend `/api/tools` fetch fails.
+ * The bundled fallback list of the 29 tools a sub-agent may be granted (all registered tools minus
+ * the restricted sub-agent tools). Used only when the backend `/api/tools` fetch fails.
  */
 export const SUB_AGENT_TOOLS: readonly SubAgentToolMeta[] = [
   { name: "file_read", label: "Read file", description: "Read a file from the local filesystem (absolute path); use offset/limit for large files." },
@@ -59,6 +59,7 @@ export const SUB_AGENT_TOOLS: readonly SubAgentToolMeta[] = [
   { name: "file_list", label: "List files", description: "List files and directories inside a workspace directory." },
   { name: "str_replace", label: "Edit file", description: "Exact string replacement inside an existing file." },
   { name: "apply_multiple_edits", label: "Apply multiple edits", description: "Apply several exact edits to one file in a single validated call." },
+  { name: "apply_patch", label: "Apply patch", description: "Edit files by applying a structured multi-file patch (add/update/delete/rename) in one validated call." },
   { name: "shall_tool", label: "Terminal", description: "Run a shell command from the workspace directory." },
   { name: "shell_view", label: "View shell output", description: "View the live buffered output of a background shell session." },
   { name: "bash_write_to_process", label: "Write to process", description: "Write to the stdin of a running background shell process (prompts, REPLs, dev servers)." },

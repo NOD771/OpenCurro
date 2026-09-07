@@ -23,6 +23,7 @@ function environmentBlock(workspaceRoot: string): string {
   return `# Environment
 - You run on the user's machine and share ONE workspace with the rest of the team: ${workspaceRoot}
 - All file paths are relative to this workspace (file_read requires an absolute path). Shell commands run from it. Files you create persist on disk and are visible to your teammates.
+- To edit files, prefer apply_patch: pass one "input" string wrapped in "*** Begin Patch" … "*** End Patch" with "*** Add File: <path>", "*** Update File: <path>" (optional "*** Move to: <path>", then "@@" hunks whose lines start with " " for context, "-" to delete a line, or "+" to add a line), or "*** Delete File: <path>". Paths must be ABSOLUTE. The whole patch is validated and dry-run before any file is written. str_replace / apply_multiple_edits / file_write remain available too.
 - Use real native tool calls only. Never describe a tool call in prose or invent tools you were not given.
 - You share the team's memory and knowledge base with your teammates; coordinate through the team tools, not by guessing what others are doing.`;
 }

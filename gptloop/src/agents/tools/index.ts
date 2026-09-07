@@ -4,6 +4,7 @@ import { fileWriteTool } from "./fileWrite.js";
 import { fileListTool } from "./fileList.js";
 import { strReplaceTool } from "./strReplace.js";
 import { applyMultipleEditsTool } from "./applyMultipleEdits.js";
+import { applyPatchTool } from "./applyPatch.js";
 import { shellTool } from "./shell.js";
 import { shellViewTool } from "./shellView.js";
 import { bashWriteToProcessTool } from "./bashWriteToProcess.js";
@@ -79,6 +80,7 @@ export {
 } from "./imagesearch.js";
 export { fetchWebUrlsTool } from "./fetchWebUrls.js";
 export { applyMultipleEditsTool } from "./applyMultipleEdits.js";
+export { applyPatchTool, parsePatch, summarizePatch, PatchError } from "./applyPatch.js";
 export { readImageTool, SUPPORTED_IMAGE_EXTENSIONS } from "./readImage.js";
 export { callSubAgentTool } from "./call_sub_agent.js";
 export { callMultipleSubAgentsTool } from "./call_multiple_sub_agents.js";
@@ -142,6 +144,7 @@ export function createToolRegistry(): ToolRegistry {
     fileListTool,
     strReplaceTool,
     applyMultipleEditsTool,
+    applyPatchTool,
     shellTool,
     shellViewTool,
     bashWriteToProcessTool,
@@ -193,6 +196,7 @@ export const tools = {
   fileListTool,
   strReplaceTool,
   applyMultipleEditsTool,
+  applyPatchTool,
   shellTool,
   shellViewTool,
   bashWriteToProcessTool,
