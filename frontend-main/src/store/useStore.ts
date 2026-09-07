@@ -8,6 +8,7 @@ import type {
   ChatMessage,
   Conversation,
   CustomProvider,
+  CustomRole,
   FetchProvider,
   KnowledgeFile,
   KnowledgeSource,
@@ -45,9 +46,10 @@ import {
 } from "@/lib/defaultMemory";
 import { hasUnsafeSegment, normalizeKnowledgePath, sanitizeKnowledge } from "@/lib/defaultKnowledge";
 import { enforceSingleActive, mergeTeamsWithDefaults } from "@/lib/defaultTeams";
+import { enforceSingleActiveRole, mergeRolesWithDefaults } from "@/lib/defaultRoles";
 
 /** The workspace sections the rail switches between. */
-export type Section = "chat" | "memory" | "knowledge" | "agents" | "skills" | "teams";
+export type Section = "chat" | "memory" | "knowledge" | "agents" | "skills" | "teams" | "roles";
 
 /** Connection state surfaced to the user. Slow ≠ offline; only a lost connection is "offline". */
 export type Connection = "online" | "reconnecting" | "offline";
@@ -84,6 +86,7 @@ interface AppState {
   knowledgeSources: Record<string, KnowledgeSource>;
   customProviders: CustomProvider[];
   agentTeams: AgentTeam[];
+  customRoles: CustomRole[];
   activeRun: ActiveRun | null;
 
   // Ephemeral UI
@@ -229,6 +232,13 @@ interface AppState {
   deleteTeam: (id: string) => void;
   /** Activate a team (turns off any other active team — only one team is active at a time). */
   setActiveTeam: (id: string, enabled: boolean) => void;
+
+  // Custom role management (a role/behavior overlay applied to the SAME Main Agent)
+  addCustomRole: (input: Omit<CustomRole, "id" | "createdAt" | "updatedAt">) => void;
+  updateCustomRole: (id: string, patch: Partial<Omit<CustomRole, "id" | "createdAt">>) => void;
+  deleteCustomRole: (id: string) => void;
+  /** Select a role (turns off any other active role — only one role is applied at a time). */
+  setActiveRole: (id: string, enabled: boolean) => void;
 
   // Multi-agent team live run (rendered inline in the assistant container message)
   startTeamRun: (
@@ -466,6 +476,7 @@ export const useStore = create<AppState>()(
       knowledgeSources: {},
       customProviders: [],
       agentTeams: mergeTeamsWithDefaults([]),
+      customRoles: mergeRolesWithDefaults([]),
       activeRun: null,
 
       hydrated: false,
@@ -532,6 +543,11 @@ export const useStore = create<AppState>()(
             Array.isArray((p as { agentTeams?: unknown }).agentTeams)
               ? ((p as { agentTeams?: AgentTeam[] }).agentTeams as AgentTeam[])
               : s.agentTeams,
+          ),
+          customRoles: mergeRolesWithDefaults(
+            Array.isArray((p as { customRoles?: unknown }).customRoles)
+              ? ((p as { customRoles?: CustomRole[] }).customRoles as CustomRole[])
+              : s.customRoles,
           ),
         }));
       },
@@ -991,6 +1007,36 @@ export const useStore = create<AppState>()(
               : enabled
                 ? { ...t, enabled: false } // only one team active at a time
                 : t,
+          ),
+        })),
+
+      // ---- Custom role management ------------------------------------------------
+      addCustomRole: (input) =>
+        set((s) => {
+          const now = Date.now();
+          const role: CustomRole = { id: uid("role"), createdAt: now, updatedAt: now, ...input };
+          // A brand-new active role must deactivate any other active role.
+          return { customRoles: enforceSingleActiveRole([role, ...s.customRoles]) };
+        }),
+
+      updateCustomRole: (id, patch) =>
+        set((s) => ({
+          customRoles: enforceSingleActiveRole(
+            s.customRoles.map((r) => (r.id === id ? { ...r, ...patch, updatedAt: Date.now() } : r)),
+          ),
+        })),
+
+      deleteCustomRole: (id) =>
+        set((s) => ({ customRoles: s.customRoles.filter((r) => r.id !== id) })),
+
+      setActiveRole: (id, enabled) =>
+        set((s) => ({
+          customRoles: s.customRoles.map((r) =>
+            r.id === id
+              ? { ...r, enabled, updatedAt: Date.now() }
+              : enabled
+                ? { ...r, enabled: false } // only one role applied at a time
+                : r,
           ),
         })),
 

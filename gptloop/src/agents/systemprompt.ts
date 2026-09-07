@@ -1,3 +1,19 @@
+/**
+ * A user-authored Custom Role: an additional layer of role, expertise, and behavioral
+ * instructions applied to the SAME Main Agent. It is NOT a new agent, sub-agent, LLM
+ * instance, or execution system — only a persona/behavior overlay. `systemPrompt` carries
+ * the role's own instructions (role, expertise, behavior, rules, communication style, task
+ * instructions); it must NOT redefine tools, tool usage, or execution architecture.
+ */
+export interface CustomRoleConfig {
+  /** Human-readable role name, e.g. "Medical Expert". */
+  name?: string;
+  /** Short description of the role. */
+  description?: string;
+  /** The role's system prompt (role/expertise/behavior/rules/communication/task instructions). */
+  systemPrompt: string;
+}
+
 export interface SystemPromptOptions {
   /**
    * Whether the two sub-agent session tools (list_sub_agent_sessions / reuse_same_sub_agent_session)
@@ -5,6 +21,41 @@ export interface SystemPromptOptions {
    * (and the tools are not exposed to the model), matching the user's Settings choice.
    */
   enableReuseSubAgentSession?: boolean;
+  /**
+   * An optional Custom Role selected by the user. When present, its role/expertise/behavior is
+   * appended to (and integrated with) THIS Main Agent's system prompt so the same agent adopts the
+   * role. The agent's identity, tools, tool-usage rules, reasoning/ReAct loop, and execution
+   * architecture all remain fully intact; the role only shapes expertise, behavior, and style.
+   */
+  customRole?: CustomRoleConfig | null;
+}
+
+/**
+ * Build the "Active custom role" section appended to the Main Agent's system prompt. Returns an
+ * empty string when no valid role is provided (empty role prompt → nothing appended). The section
+ * is framed so the role layers ON TOP of the agent without ever overriding its operational rules.
+ */
+function buildCustomRoleSection(role: CustomRoleConfig | null | undefined): string {
+  if (!role) return "";
+  const rolePrompt = (role.systemPrompt ?? "").trim();
+  if (rolePrompt.length === 0) return "";
+
+  const name = (role.name ?? "").trim();
+  const description = (role.description ?? "").trim();
+  const header = name.length > 0 ? `Role: ${name}` : "Role: (unnamed custom role)";
+  const descriptionLine = description.length > 0 ? `\nDescription: ${description}` : "";
+
+  return `
+
+# Active custom role
+The user has selected a Custom Role for you to adopt for this conversation. A Custom Role is NOT a separate agent, sub-agent, model, or execution system — it is an additional layer of role, expertise, and behavior applied to YOU, the same GPTLoop Main Agent. Everything described above about your identity, environment, tools, tool-usage rules, reasoning/ReAct loop, and execution architecture stays fully in effect and takes precedence; the role must never be treated as permission to change or ignore those operational rules.
+
+Adopt the role below and let it shape your expertise, behavior, rules, communication style, and how you approach and solve the user's tasks. You remain responsible for all execution, reasoning, tool calling, and task processing exactly as defined above. If any role instruction conflicts with the tool-usage or execution rules above, those operational rules win; otherwise follow the role faithfully and consistently for the whole conversation.
+
+${header}${descriptionLine}
+
+Role instructions:
+${rolePrompt}`;
 }
 
 export function buildSystemPrompt(
@@ -200,5 +251,5 @@ It is important to remember:
 - When a tool is needed, call it — do not narrate fake results.
 - When no tool is needed, answer the user directly.
 - When the task is complete, give a short, clear summary of what you did.
-`.trim();
+`.trim() + buildCustomRoleSection(options.customRole);
 }

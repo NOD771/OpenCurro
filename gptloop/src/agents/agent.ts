@@ -1,5 +1,5 @@
 import type { AppConfig } from "../config.js";
-import { buildSystemPrompt } from "./systemprompt.js";
+import { buildSystemPrompt, type CustomRoleConfig } from "./systemprompt.js";
 import type { ProviderRegistry } from "./providers/registry.js";
 import { resolveProvider } from "./providers/registry.js";
 import type { Provider } from "./providers/types.js";
@@ -71,6 +71,13 @@ export interface RunAgentRequest {
    * tools are hidden from the model and their usage guidance is omitted from the system prompt.
    */
   enableReuseSubAgentSession?: boolean;
+  /**
+   * An optional Custom Role selected by the user. When present, its role/expertise/behavior is
+   * appended to and integrated with THIS Main Agent's system prompt so the same agent adopts the
+   * role. It never creates a new agent, sub-agent, or model; the agent's tools, execution, and
+   * reasoning architecture stay fully intact.
+   */
+  customRole?: CustomRoleConfig | null;
 }
 
 /**
@@ -165,6 +172,7 @@ export class AgentRunner {
       const reuseSessionsEnabled = request.enableReuseSubAgentSession === true;
       const systemPrompt = buildSystemPrompt(this.config.workspaceRoot, {
         enableReuseSubAgentSession: reuseSessionsEnabled,
+        customRole: request.customRole ?? null,
       });
       // Expose the sub-agent session tools to the model only when the setting is on. Everything else
       // in the registry is always available; the two session tools are filtered out otherwise.

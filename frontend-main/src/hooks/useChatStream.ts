@@ -6,6 +6,7 @@ import { dispatchStreamEvent } from "@/lib/streamDispatch";
 import { attachLatestMemoryAgentRun } from "@/lib/memoryAgent";
 import { CUSTOM_PROVIDER_PREFIX, toCustomProviderConfig } from "@/lib/providers";
 import { activeTeam } from "@/lib/defaultTeams";
+import { activeRole, toBackendRole } from "@/lib/defaultRoles";
 import { useStore, type ActiveRun } from "@/store/useStore";
 import { uid } from "@/utils/id";
 import type {
@@ -70,6 +71,15 @@ function buildStartRequest(convId: string, text: string): StreamRequest {
   const memory: MemoryFile[] = store.memory;
   const knowledge: KnowledgeFile[] = store.knowledge;
 
+  // Custom Role: when the user has selected a role, send it so the SAME Main Agent adopts its
+  // role/expertise/behavior for this turn. Only roles carrying an actual system prompt are sent;
+  // when no role is active, nothing is sent and the Main Agent behaves exactly as before.
+  const selectedRole = activeRole(store.customRoles);
+  const customRole =
+    selectedRole && selectedRole.systemPrompt.trim().length > 0
+      ? toBackendRole(selectedRole)
+      : undefined;
+
   // Multi-agent team mode: when enabled and a team is active, route the turn through the team head.
   const teamsEnabled = settings.enableAgentTeams === "yes";
   const team = teamsEnabled ? activeTeam(store.agentTeams) : null;
@@ -114,6 +124,7 @@ function buildStartRequest(convId: string, text: string): StreamRequest {
     memory,
     knowledge,
     enable_reuse_sub_agent_session: settings.enableReuseSubAgentSession === "yes" ? "yes" : "no",
+    custom_role: customRole,
     multi_agent: Boolean(backendTeam),
     agent_team: backendTeam,
     enable_send_message_to_team: settings.enableSendMessageToTeam === "yes" ? "yes" : "no",
