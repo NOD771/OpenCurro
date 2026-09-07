@@ -11,6 +11,7 @@ import {
   Download,
   ExternalLink,
   Eye,
+  FileDiff,
   FileEdit,
   FilePlus2,
   FileText,
@@ -81,6 +82,7 @@ const ICONS: Record<string, typeof Terminal> = {
   file_list: FolderTree,
   str_replace: Pencil,
   apply_multiple_edits: PencilLine,
+  apply_patch: FileDiff,
   shall_tool: Terminal,
   shell_view: Eye,
   bash_write_to_process: CornerDownLeft,
@@ -228,6 +230,7 @@ export function ToolChip({ tool }: { tool: ToolActivity }) {
   if (tool.name === "file_read") return <FileReadChip tool={tool} />;
   if (tool.name === "str_replace") return <StrReplaceChip tool={tool} />;
   if (tool.name === "apply_multiple_edits") return <ApplyEditsChip tool={tool} />;
+  if (tool.name === "apply_patch") return <ApplyPatchChip tool={tool} />;
   if (tool.name === "read_image") return <ReadImageChip tool={tool} />;
   if (tool.name === "image_search") return <ImageSearchChip tool={tool} />;
   if (tool.name === "fatch_web_urls") return <FetchChip tool={tool} />;
@@ -602,6 +605,101 @@ function ApplyEditsChip({ tool }: { tool: ToolActivity }) {
               <Pre className="mt-1">{e.new_text || "(empty — deletes matched text)"}</Pre>
             </div>
           ))}
+        </>
+      )}
+    />
+  );
+}
+
+/** Colorised view of a raw apply_patch envelope: +add lines green, -remove lines red, headers bold. */
+function PatchDiff({ input }: { input: string }) {
+  const lines = String(input ?? "").split("\n");
+  return (
+    <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--chip)] p-2 font-mono text-[11px] leading-relaxed">
+      {lines.map((line, i) => {
+        const isHeader = line.startsWith("*** ") || line.startsWith("@@");
+        const isAdd = !isHeader && line.startsWith("+");
+        const isDel = !isHeader && line.startsWith("-");
+        return (
+          <div
+            key={i}
+            className={cn(
+              isHeader && "font-semibold text-[var(--secondary)]",
+              isAdd && "bg-[var(--success-soft)] text-[var(--success)]",
+              isDel && "bg-[var(--danger-soft)] text-[var(--danger)]",
+              !isHeader && !isAdd && !isDel && "text-[var(--fg)]",
+            )}
+          >
+            {line || " "}
+          </div>
+        );
+      })}
+    </pre>
+  );
+}
+
+const PATCH_OP_META: Record<string, { label: string; tone: "accent" | "default" | "danger" }> = {
+  add: { label: "add", tone: "accent" },
+  update: { label: "update", tone: "default" },
+  delete: { label: "delete", tone: "danger" },
+};
+
+/** apply_patch — shows the raw structured patch (colorised) plus the per-file operations applied. */
+function ApplyPatchChip({ tool }: { tool: ToolActivity }) {
+  const { data, error, args, hasResult } = parts(tool);
+  const input: string = (args.input as string) ?? "";
+  const operations: any[] = (data?.operations as any[]) ?? [];
+  return (
+    <Shell
+      icon={<FileDiff className="h-3.5 w-3.5" />}
+      label={tool.label}
+      status={tool.status}
+      expandable={hasResult || input.length > 0}
+      pills={
+        data?.files_changed != null ? (
+          <Pill>{data.files_changed} file(s)</Pill>
+        ) : input.length > 0 ? (
+          <Pill tone="accent">patch</Pill>
+        ) : undefined
+      }
+      panel={() => (
+        <>
+          {error?.message && (
+            <div className="text-[var(--danger)]">
+              Patch failed: {error.message}
+              {error.line != null && <span className="ml-1 opacity-70">(line {error.line})</span>}
+            </div>
+          )}
+          {operations.length > 0 && (
+            <div className="flex flex-col gap-1">
+              {operations.map((op, i) => {
+                const meta = PATCH_OP_META[op.type] ?? { label: op.type, tone: "default" as const };
+                return (
+                  <div key={i} className="flex flex-wrap items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border)] p-1.5">
+                    <Pill tone={meta.tone}>{meta.label}</Pill>
+                    <span className="font-mono text-[var(--fg)]">{op.file_path}</span>
+                    {op.moved_to && (
+                      <span className="flex items-center gap-1 text-[var(--muted)]">
+                        <CornerDownLeft className="h-2.5 w-2.5" />
+                        <span className="font-mono">{op.moved_to}</span>
+                      </span>
+                    )}
+                    {op.lines_added != null && op.lines_added > 0 && <Pill tone="accent">+{op.lines_added}</Pill>}
+                    {op.lines_removed != null && op.lines_removed > 0 && <Pill tone="danger">-{op.lines_removed}</Pill>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {data?.summary && <div className="text-[var(--muted)]">{String(data.summary)}</div>}
+          {input.length > 0 && (
+            <div>
+              <Label>Patch</Label>
+              <div className="mt-1">
+                <PatchDiff input={input} />
+              </div>
+            </div>
+          )}
         </>
       )}
     />
