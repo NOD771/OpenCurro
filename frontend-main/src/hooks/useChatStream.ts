@@ -7,6 +7,7 @@ import { attachLatestMemoryAgentRun } from "@/lib/memoryAgent";
 import { CUSTOM_PROVIDER_PREFIX, toCustomProviderConfig } from "@/lib/providers";
 import { activeTeam } from "@/lib/defaultTeams";
 import { activeRole, toBackendRole } from "@/lib/defaultRoles";
+import { findActiveCustomAgent, toBackendCustomAgent } from "@/lib/customAgents";
 import { useStore, type ActiveRun } from "@/store/useStore";
 import { uid } from "@/utils/id";
 import type {
@@ -80,8 +81,15 @@ function buildStartRequest(convId: string, text: string): StreamRequest {
       ? toBackendRole(selectedRole)
       : undefined;
 
+  // Custom Agent mode: when a top-level Custom Agent is the active agent, this turn runs as that
+  // independent Main Agent (its own system prompt + selected tools). It takes precedence over team
+  // mode — a Custom Agent is a single top-level agent, not a team.
+  const customAgent = findActiveCustomAgent(store.customAgents, store.activeCustomAgentId);
+  const backendCustomAgent = customAgent ? toBackendCustomAgent(customAgent) : undefined;
+
   // Multi-agent team mode: when enabled and a team is active, route the turn through the team head.
-  const teamsEnabled = settings.enableAgentTeams === "yes";
+  // Disabled while a Custom Agent is active.
+  const teamsEnabled = settings.enableAgentTeams === "yes" && !backendCustomAgent;
   const team = teamsEnabled ? activeTeam(store.agentTeams) : null;
   const backendTeam = team
     ? {
@@ -128,6 +136,7 @@ function buildStartRequest(convId: string, text: string): StreamRequest {
     multi_agent: Boolean(backendTeam),
     agent_team: backendTeam,
     enable_send_message_to_team: settings.enableSendMessageToTeam === "yes" ? "yes" : "no",
+    custom_agent: backendCustomAgent,
   };
 }
 

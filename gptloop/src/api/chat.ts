@@ -13,8 +13,15 @@ import { normalizeMemoryFiles } from "../agents/memory.js";
 import { normalizeKnowledgeFiles } from "../agents/knowledge.js";
 import { initSSE, formatSSE } from "../utils/sse.js";
 import type { GptLoopDatabase } from "../database/index.js";
+import { createCustomAgentId } from "../database/index.js";
 import type { MultiAgentRunner } from "../agents/multiagent/index.js";
 import type { AgentTeamDefinition, TeamMemberDefinition, RunTeamRequest } from "../agents/multiagent/index.js";
+import {
+  CustomAgentRunner,
+  CustomAgentManager,
+  normalizeCustomAgentConfig,
+  type CustomAgentConfig,
+} from "../agents/customagent/index.js";
 
 /** Extract a string field from an untrusted object (used on the custom_provider payload). */
 function str(value: unknown): string {
@@ -79,6 +86,34 @@ interface StreamBody {
   agent_team?: unknown;
   /** Mirrors settings; gates the sensitive send_message_to_team tool for the team this turn. */
   enable_send_message_to_team?: unknown;
+  /**
+   * The active Custom Agent config (a top-level, user-created Main Agent) for this turn. When present
+   * and valid, the turn runs as that independent agent — its own system prompt + selected tools —
+   * through the shared core runtime. Sent as a full config from the frontend.
+   */
+  custom_agent?: unknown;
+  /**
+   * Alternatively, the id of a stored Custom Agent to run this turn. Resolved server-side via the
+   * CustomAgentManager, so a Custom Agent can be started independently of the Main Agent.
+   */
+  custom_agent_id?: unknown;
+}
+
+/**
+ * Resolve the Custom Agent for this turn, if any: prefer a full config sent from the frontend, else
+ * load a stored config by id via the manager. Returns null when neither yields a usable agent.
+ */
+function resolveCustomAgent(body: StreamBody, manager: CustomAgentManager): CustomAgentConfig | null {
+  if (body.custom_agent && typeof body.custom_agent === "object") {
+    const normalized = normalizeCustomAgentConfig(body.custom_agent, {
+      id: createCustomAgentId(),
+      now: Date.now(),
+    });
+    if (normalized) return normalized;
+  }
+  const id = typeof body.custom_agent_id === "string" ? body.custom_agent_id.trim() : "";
+  if (id) return manager.get(id);
+  return null;
 }
 
 /** Defensively coerce the client-provided agent-team definition into a safe, well-typed value. */
@@ -213,6 +248,8 @@ export function buildChatRouter(
   askQuestions: QuestionStore,
   db: GptLoopDatabase,
   multiAgent: MultiAgentRunner,
+  customAgents: CustomAgentManager,
+  customAgentRunner: CustomAgentRunner,
 ): Router {
   const router = Router();
 
@@ -434,6 +471,30 @@ export function buildChatRouter(
           body.enable_reuse_sub_agent_session === "yes",
         customRole: normalizeCustomRole(body.custom_role),
       };
+
+      // Custom Agent mode: when the active agent is a user-created top-level Custom Agent, run this
+      // turn through the dedicated CustomAgentRunner. It parameterizes the SAME core runtime with the
+      // agent's own system prompt + selected tools, so it behaves as an independent Main Agent (not a
+      // sub-agent) and does not require the default Main Agent to be running.
+      const customAgent = resolveCustomAgent(body, customAgents);
+      if (customAgent) {
+        void customAgentRunner
+          .run(runRequest, customAgent, session, buffer, abortController.signal)
+          .catch((error) => {
+            buffer.append("error", {
+              code: "custom_agent_crashed",
+              message: error instanceof Error ? error.message : String(error),
+            });
+            buffer.setDone();
+            session.running = false;
+          })
+          .finally(() => {
+            settleTurn(chatId, session, buffer);
+          });
+
+        await streamFromBuffer(res, buffer, body.since_event_id ?? -1);
+        return;
+      }
 
       // Fire-and-forget the autonomous agent loop; the response streams from the buffer.
       void agent

@@ -18,6 +18,9 @@ export const CHAT_SESSION_ID_LENGTH = 20;
 /** Sub-agent runs carry a 10-character alphanumeric ID. */
 export const SUB_AGENT_SESSION_ID_LENGTH = 10;
 
+/** Custom agents carry a 16-character alphanumeric ID. */
+export const CUSTOM_AGENT_ID_LENGTH = 16;
+
 /** Generate a cryptographically random ID of `length` characters from the 62-char alphabet. */
 export function randomId(length: number): string {
   const bytes = crypto.randomBytes(length);
@@ -36,6 +39,14 @@ export function createChatSessionId(): string {
 /** Create a new 10-character sub-agent session ID (all numbers + all letters). */
 export function createSubAgentSessionId(): string {
   return randomId(SUB_AGENT_SESSION_ID_LENGTH);
+}
+
+/**
+ * Create a new 16-character custom-agent ID (all numbers + all letters). A Custom Agent is a
+ * user-created, independently-configured top-level Main Agent; each one carries its own id.
+ */
+export function createCustomAgentId(): string {
+  return randomId(CUSTOM_AGENT_ID_LENGTH);
 }
 
 /** True when `value` looks like a usable session id (bounded, printable, path-safe). */

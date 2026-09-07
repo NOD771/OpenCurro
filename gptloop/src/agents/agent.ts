@@ -78,6 +78,31 @@ export interface RunAgentRequest {
    * reasoning architecture stay fully intact.
    */
   customRole?: CustomRoleConfig | null;
+  /**
+   * When set, this string is used VERBATIM as the system prompt instead of the built Main-Agent
+   * prompt. Used by Custom Agents (see agents/customagent) — a Custom Agent is a top-level Main Agent
+   * with its own fully-customized system prompt. Undefined for the default Main Agent, which keeps
+   * building its prompt exactly as before.
+   */
+  systemPromptOverride?: string | null;
+  /**
+   * When set, the tools advertised to the model are restricted to this set of names (the multi-agent
+   * team tools are still always removed on top). Used by Custom Agents to run with only their selected
+   * tools. Undefined for the default Main Agent, which sees the full registry as before.
+   */
+  allowedToolNames?: readonly string[] | null;
+  /**
+   * Present only when THIS turn is executed by a Custom Agent (a top-level, user-created Main Agent).
+   * Informational — the actual behavior is driven by `systemPromptOverride` and `allowedToolNames`.
+   */
+  customAgent?: CustomAgentInfo | null;
+}
+
+/** Lightweight identity of the Custom Agent handling a turn (see agents/customagent/configuration). */
+export interface CustomAgentInfo {
+  id: string;
+  name: string;
+  description: string;
 }
 
 /**
@@ -170,15 +195,27 @@ export class AgentRunner {
 
       session.messages.push({ role: "user", content: userContent });
       const reuseSessionsEnabled = request.enableReuseSubAgentSession === true;
-      const systemPrompt = buildSystemPrompt(this.config.workspaceRoot, {
-        enableReuseSubAgentSession: reuseSessionsEnabled,
-        customRole: request.customRole ?? null,
-      });
+      // A Custom Agent (top-level, user-created Main Agent) supplies its own fully-customized system
+      // prompt, used verbatim. The default Main Agent has no override and builds its prompt as before.
+      const promptOverride = request.systemPromptOverride?.trim();
+      const systemPrompt =
+        promptOverride && promptOverride.length > 0
+          ? promptOverride
+          : buildSystemPrompt(this.config.workspaceRoot, {
+              enableReuseSubAgentSession: reuseSessionsEnabled,
+              customRole: request.customRole ?? null,
+            });
       // Expose the sub-agent session tools to the model only when the setting is on. Everything else
-      // in the registry is always available; the two session tools are filtered out otherwise.
+      // in the registry is always available; the two session tools are filtered out otherwise. The
+      // multi-agent team tools are always hidden from a single agent.
       const hiddenTools = new Set<string>(TEAM_TOOLS);
       if (!reuseSessionsEnabled) for (const name of SESSION_REUSE_TOOLS) hiddenTools.add(name);
-      const toolSchemas = this.tools.schemas.filter((s) => !hiddenTools.has(s.function.name));
+      let toolSchemas = this.tools.schemas.filter((s) => !hiddenTools.has(s.function.name));
+      // Custom Agents run with only their selected tools (team tools remain excluded above).
+      if (request.allowedToolNames) {
+        const allow = new Set(request.allowedToolNames);
+        toolSchemas = toolSchemas.filter((s) => allow.has(s.function.name));
+      }
       const visionCapable = isVisionCapableModel(request.model, this.config);
       const web: WebToolsConfig = {
         searchProvider: request.searchProvider ?? this.config.searchProvider,

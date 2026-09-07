@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import type { ToolRegistry } from "../agents/tools/registry.js";
 import { isSubAgentRestrictedTool } from "../agents/tools/subAgentRestrictedTools.js";
+import { listCustomAgentTools } from "../agents/customagent/index.js";
 
 /** One tool entry advertised to the frontend for sub-agent creation. */
 export interface SubAgentToolInfo {
@@ -32,6 +33,17 @@ export function buildToolsRouter(tools: ToolRegistry): Router {
       count: subAgentTools.length,
       tools: subAgentTools,
     });
+  });
+
+  /**
+   * The catalog of tools a Custom Agent may be granted. A Custom Agent is a top-level Main Agent, so
+   * it gets the Main Agent's full tool surface (sub-agent, memory, skills, knowledge, and every other
+   * tool) MINUS the multi-agent/team collaboration tools, which never apply to a single top-level
+   * agent. The Custom Agent creation UI fetches this so it always mirrors the live tool registry.
+   */
+  router.get("/custom-agent", (_req: Request, res: Response) => {
+    const tools_ = listCustomAgentTools(tools);
+    res.json({ total: tools.schemas.length, count: tools_.length, tools: tools_ });
   });
 
   return router;

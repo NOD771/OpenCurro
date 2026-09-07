@@ -7,6 +7,7 @@ import type {
   BrowserPreview,
   ChatMessage,
   Conversation,
+  CustomAgent,
   CustomProvider,
   CustomRole,
   FetchProvider,
@@ -47,9 +48,18 @@ import {
 import { hasUnsafeSegment, normalizeKnowledgePath, sanitizeKnowledge } from "@/lib/defaultKnowledge";
 import { enforceSingleActive, mergeTeamsWithDefaults } from "@/lib/defaultTeams";
 import { enforceSingleActiveRole, mergeRolesWithDefaults } from "@/lib/defaultRoles";
+import { MAIN_AGENT_ID, normalizeCustomAgents } from "@/lib/customAgents";
 
 /** The workspace sections the rail switches between. */
-export type Section = "chat" | "memory" | "knowledge" | "agents" | "skills" | "teams" | "roles";
+export type Section =
+  | "chat"
+  | "memory"
+  | "knowledge"
+  | "agents"
+  | "skills"
+  | "teams"
+  | "roles"
+  | "customagents";
 
 /** Connection state surfaced to the user. Slow ≠ offline; only a lost connection is "offline". */
 export type Connection = "online" | "reconnecting" | "offline";
@@ -87,6 +97,10 @@ interface AppState {
   customProviders: CustomProvider[];
   agentTeams: AgentTeam[];
   customRoles: CustomRole[];
+  /** User-created top-level Custom Agents (independent Main Agents). */
+  customAgents: CustomAgent[];
+  /** The active agent for chat turns: a Custom Agent id, or null / "main" for the built-in Main Agent. */
+  activeCustomAgentId: string | null;
   activeRun: ActiveRun | null;
 
   // Ephemeral UI
@@ -239,6 +253,13 @@ interface AppState {
   deleteCustomRole: (id: string) => void;
   /** Select a role (turns off any other active role — only one role is applied at a time). */
   setActiveRole: (id: string, enabled: boolean) => void;
+
+  // Custom agent management (top-level, user-created Main Agents)
+  addCustomAgent: (input: Omit<CustomAgent, "id" | "createdAt" | "updatedAt">) => CustomAgent;
+  updateCustomAgent: (id: string, patch: Partial<Omit<CustomAgent, "id" | "createdAt">>) => void;
+  deleteCustomAgent: (id: string) => void;
+  /** Select which agent chat turns run as: a Custom Agent id, or null for the built-in Main Agent. */
+  setActiveCustomAgent: (id: string | null) => void;
 
   // Multi-agent team live run (rendered inline in the assistant container message)
   startTeamRun: (
@@ -477,6 +498,8 @@ export const useStore = create<AppState>()(
       customProviders: [],
       agentTeams: mergeTeamsWithDefaults([]),
       customRoles: mergeRolesWithDefaults([]),
+      customAgents: [],
+      activeCustomAgentId: null,
       activeRun: null,
 
       hydrated: false,
@@ -549,6 +572,13 @@ export const useStore = create<AppState>()(
               ? ((p as { customRoles?: CustomRole[] }).customRoles as CustomRole[])
               : s.customRoles,
           ),
+          customAgents: normalizeCustomAgents(
+            (p as { customAgents?: unknown }).customAgents ?? s.customAgents,
+          ),
+          activeCustomAgentId:
+            typeof (state as { activeCustomAgentId?: unknown }).activeCustomAgentId === "string"
+              ? ((state as { activeCustomAgentId?: string }).activeCustomAgentId ?? null)
+              : s.activeCustomAgentId,
         }));
       },
 
@@ -1039,6 +1069,31 @@ export const useStore = create<AppState>()(
                 : r,
           ),
         })),
+
+      // ---- Custom agent management (top-level, user-created Main Agents) ----------
+      addCustomAgent: (input) => {
+        const now = Date.now();
+        const agent: CustomAgent = { id: uid("agent"), createdAt: now, updatedAt: now, ...input };
+        set((s) => ({ customAgents: [agent, ...s.customAgents] }));
+        return agent;
+      },
+
+      updateCustomAgent: (id, patch) =>
+        set((s) => ({
+          customAgents: s.customAgents.map((a) =>
+            a.id === id ? { ...a, ...patch, updatedAt: Date.now() } : a,
+          ),
+        })),
+
+      deleteCustomAgent: (id) =>
+        set((s) => ({
+          customAgents: s.customAgents.filter((a) => a.id !== id),
+          // Deleting the active agent falls back to the built-in Main Agent.
+          activeCustomAgentId: s.activeCustomAgentId === id ? null : s.activeCustomAgentId,
+        })),
+
+      setActiveCustomAgent: (id) =>
+        set(() => ({ activeCustomAgentId: id && id !== MAIN_AGENT_ID ? id : null })),
 
       // ---- Multi-agent team live run ---------------------------------------------
       startTeamRun: (convId, msgId, info) =>

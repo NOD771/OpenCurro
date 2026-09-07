@@ -11,7 +11,12 @@ import { SnapshotsRepo } from "./repositories/snapshotsRepo.js";
 import { AppStateRepo } from "./repositories/appStateRepo.js";
 import { MemoryAgentRunsRepo } from "./repositories/memoryAgentRunsRepo.js";
 
-export { createChatSessionId, createSubAgentSessionId, isSafeSessionId } from "./ids.js";
+export {
+  createChatSessionId,
+  createSubAgentSessionId,
+  createCustomAgentId,
+  isSafeSessionId,
+} from "./ids.js";
 export { resolveDatabasePath, GPTLOOP_DATA_DIR, DATABASE_FILE_NAME } from "./connection.js";
 export { APP_STATE_KEYS, isAppStateKey, type AppStateKey } from "./repositories/appStateRepo.js";
 export type { SessionRow } from "./repositories/sessionsRepo.js";

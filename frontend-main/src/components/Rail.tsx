@@ -1,9 +1,10 @@
-import { MessageCircle, Brain, Library, Bot, Sparkles, Users, Drama } from "lucide-react";
+import { MessageCircle, Brain, Library, Bot, Sparkles, Users, Drama, Boxes } from "lucide-react";
 import { useStore, type Section } from "@/store/useStore";
 import { cn } from "@/utils/cn";
 
 const NAV: Array<{ id: Section; label: string; Icon: typeof MessageCircle }> = [
   { id: "chat", label: "Chat history", Icon: MessageCircle },
+  { id: "customagents", label: "Custom agents", Icon: Boxes },
   { id: "memory", label: "Memory", Icon: Brain },
   { id: "knowledge", label: "Knowledge base", Icon: Library },
   { id: "agents", label: "Sub-agents", Icon: Bot },

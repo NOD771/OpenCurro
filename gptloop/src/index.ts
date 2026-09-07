@@ -14,8 +14,11 @@ import { buildScrapeRouter } from "./api/scrape.js";
 import { buildStateRouter, buildSessionsRouter } from "./api/state.js";
 import { buildToolsRouter } from "./api/tools.js";
 import { buildMemoryAgentRouter } from "./api/memoryagent.js";
+import { buildSystemPromptRouter } from "./api/systemprompt.js";
+import { buildCustomAgentsRouter } from "./api/customagents.js";
 import { MemoryAgentService } from "./agents/memoryagent/index.js";
 import { MultiAgentRunner } from "./agents/multiagent/index.js";
+import { CustomAgentManager, CustomAgentRunner } from "./agents/customagent/index.js";
 import { GptLoopDatabase } from "./database/index.js";
 
 function main(): void {
@@ -36,6 +39,11 @@ function main(): void {
   // The multi-agent team runner: drives a whole agent team (head + members) for one chat turn,
   // streaming onto the same event buffer the single agent uses.
   const multiAgent = new MultiAgentRunner(providers, tools, config);
+  // Custom Agents: user-created, independently-configured TOP-LEVEL Main Agents. The manager persists
+  // their configs in the SQLite app_state repository; the runner executes them through the SAME core
+  // runtime as the Main Agent (parameterized with each agent's system prompt + selected tools).
+  const customAgents = new CustomAgentManager(db.appState);
+  const customAgentRunner = new CustomAgentRunner(agent, tools, config);
 
   const app = express();
   app.use(
@@ -61,7 +69,22 @@ function main(): void {
 
   app.use("/api/providers", buildProviderRouter(providers));
   app.use("/api/tools", buildToolsRouter(tools));
-  app.use("/api/chat", buildChatRouter(agent, store, config, planApprovals, askQuestions, db, multiAgent));
+  app.use("/api/system-prompt", buildSystemPromptRouter(config));
+  app.use("/api/custom-agents", buildCustomAgentsRouter(customAgents));
+  app.use(
+    "/api/chat",
+    buildChatRouter(
+      agent,
+      store,
+      config,
+      planApprovals,
+      askQuestions,
+      db,
+      multiAgent,
+      customAgents,
+      customAgentRunner,
+    ),
+  );
   app.use("/api/files", buildFilesRouter(config));
   app.use("/api/scrape", buildScrapeRouter(config));
   app.use("/api/state", buildStateRouter(db));
