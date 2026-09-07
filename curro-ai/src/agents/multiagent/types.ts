@@ -75,8 +75,12 @@ export interface RunTeamRequest {
   knowledge?: KnowledgeFile[];
 }
 
-/** How a mailbox message was produced — shapes the framing the recipient agent sees. */
-export type TeamMessageKind = "user" | "delegate" | "message" | "to_leader";
+/**
+ * How a mailbox message was produced — shapes the framing the recipient agent sees. `system` is an
+ * automatic, orchestrator-generated nudge (e.g. reminding a member to report back to the leader); it
+ * is not sent by any agent and does not count against the inter-agent message budget.
+ */
+export type TeamMessageKind = "user" | "delegate" | "message" | "to_leader" | "system";
 
 /** A single message sitting in an agent's mailbox, waiting to be delivered when it is free. */
 export interface MailboxMessage {
@@ -107,6 +111,9 @@ export interface TeamAgentRunResult {
 
 /** The sender id used for the human's turn-starting message. */
 export const USER_SENDER_ID = "__user__";
+
+/** The sender id used for automatic, orchestrator-generated system messages (e.g. leader-report nudges). */
+export const SYSTEM_SENDER_ID = "__system__";
 
 // ---- SSE event names emitted by a team run (all stamped onto the shared turn buffer) ----------
 

@@ -125,10 +125,104 @@ function scriptedProvider(): Provider {
   };
 }
 
-function buildOrchestrator(events: Array<{ e: string; d: Record<string, unknown> }>, signal: AbortSignal) {
+/**
+ * A scripted provider where the member finishes its FIRST run silently — producing a final text
+ * answer without ever calling message_team_leader. Only after the orchestrator injects the automatic
+ * "SYSTEM NOTICE" nudge does Niko report back. Exercises the auto-report safety net.
+ */
+function silentMemberProvider(): Provider {
+  return {
+    metadata: { id: "mock", label: "Mock", defaultBaseUrl: "" },
+    async listModels() {
+      return [];
+    },
+    async *streamChatCompletion(opts): AsyncGenerator<StreamDelta, void, unknown> {
+      const sys = String(opts.messages[0]?.content ?? "");
+      const isLeader = sys.includes('You are "Elio"');
+      const msgs = opts.messages;
+
+      if (isLeader) {
+        const hasDelegated = msgs.some(
+          (m) =>
+            m.role === "assistant" &&
+            Array.isArray(m.tool_calls) &&
+            (m.tool_calls as Array<{ function?: { name?: string } }>).some(
+              (t) => t.function?.name === "delegate_task_or_send_message",
+            ),
+        );
+        if (!hasDelegated) {
+          yield {
+            toolCalls: [
+              {
+                index: 0,
+                id: "t-del",
+                type: "function",
+                function: {
+                  name: "delegate_task_or_send_message",
+                  arguments: JSON.stringify({
+                    messages: [{ agent_id: "Niko", message: "Design the landing page." }],
+                  }),
+                },
+              },
+            ],
+            finishReason: "tool_calls",
+          };
+          return;
+        }
+        yield { text: "All done — the team completed the landing page." };
+        return;
+      }
+
+      // Niko: report only once the automatic nudge has been delivered; otherwise finish silently.
+      const hasReported = msgs.some(
+        (m) =>
+          m.role === "assistant" &&
+          Array.isArray(m.tool_calls) &&
+          (m.tool_calls as Array<{ function?: { name?: string } }>).some(
+            (t) => t.function?.name === "message_team_leader",
+          ),
+      );
+      if (hasReported) {
+        yield { text: "Already reported." };
+        return;
+      }
+      const wasNudged = msgs.some(
+        (m) => m.role === "user" && String(m.content).includes("SYSTEM NOTICE"),
+      );
+      if (wasNudged) {
+        yield {
+          toolCalls: [
+            {
+              index: 0,
+              id: "n-rep",
+              type: "function",
+              function: {
+                name: "message_team_leader",
+                arguments: JSON.stringify({
+                  my_name: "Niko",
+                  message: "Design complete in index.html.",
+                }),
+              },
+            },
+          ],
+          finishReason: "tool_calls",
+        };
+        return;
+      }
+      // First run: finish silently WITHOUT reporting to the leader.
+      yield { text: "I finished the design." };
+    },
+  };
+}
+
+function buildOrchestrator(
+  events: Array<{ e: string; d: Record<string, unknown> }>,
+  signal: AbortSignal,
+  provider: Provider = scriptedProvider(),
+) {
   const tools = createToolRegistry();
   return new TeamOrchestrator({
-    provider: scriptedProvider(),
+    provider,
     tools,
     config: fakeConfig,
     team,
@@ -175,6 +269,38 @@ describe("TeamOrchestrator actor model", () => {
       (ev) => ev.e === EV_AGENT_SEGMENT && ev.d.agent_id === "Elio" && String(ev.d.content).includes("All done"),
     );
     assert.ok(finalSegment, "head should produce a final answer");
+  });
+
+  it("auto-nudges a member that finished without reporting, and it then reports to the leader", async () => {
+    const events: Array<{ e: string; d: Record<string, unknown> }> = [];
+    const controller = new AbortController();
+    const orch = buildOrchestrator(events, controller.signal, silentMemberProvider());
+
+    await orch.run("Build a landing page.", "");
+
+    // Niko finished its first run silently, so the orchestrator injected the automatic nudge.
+    const nudgeStart = events.find(
+      (ev) =>
+        ev.e === "team_agent_start" &&
+        ev.d.agent_id === "Niko" &&
+        ev.d.trigger === "team-coordination check",
+    );
+    assert.ok(nudgeStart, "orchestrator should nudge the silent member to report");
+
+    // After the nudge, Niko reported back to the leader.
+    const report = events.find(
+      (ev) => ev.e === EV_TEAM_MESSAGE && ev.d.to === "Elio" && ev.d.kind === "to_leader",
+    );
+    assert.ok(report, "nudged member should report to the leader");
+
+    // The head still produced its final answer, and the run reached quiescence (resolved).
+    const finalSegment = events.find(
+      (ev) =>
+        ev.e === EV_AGENT_SEGMENT &&
+        ev.d.agent_id === "Elio" &&
+        String(ev.d.content).includes("All done"),
+    );
+    assert.ok(finalSegment, "head should produce a final answer after the nudged report");
   });
 
   it("stops promptly when aborted", async () => {

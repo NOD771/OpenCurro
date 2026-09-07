@@ -1,3 +1,4 @@
+import { SYSTEM_SENDER_ID, USER_SENDER_ID } from "./types.js";
 import type { AgentTeamDefinition, MailboxMessage, TeamMemberDefinition } from "./types.js";
 
 /** A readable roster of the whole team (leader + members) with descriptions — shared by all agents. */
@@ -127,6 +128,12 @@ export function frameMailbox(
     return batch[0]!.message;
   }
 
+  // A lone automatic system nudge is already a fully self-contained instruction — deliver it verbatim
+  // rather than wrapping it in the "message(s) from your team" framing, which would misattribute it.
+  if (batch.length === 1 && batch[0]!.kind === "system") {
+    return batch[0]!.message;
+  }
+
   const parts: string[] = [];
   const header =
     batch.length === 1
@@ -135,7 +142,12 @@ export function frameMailbox(
   parts.push(header, "");
 
   batch.forEach((m, i) => {
-    const senderLabel = m.from === "__user__" ? "the user" : `"${m.from}"`;
+    const senderLabel =
+      m.from === USER_SENDER_ID
+        ? "the user"
+        : m.from === SYSTEM_SENDER_ID
+          ? "the system"
+          : `"${m.from}"`;
     const kindLabel =
       m.kind === "delegate"
         ? "task from the team leader"
@@ -143,7 +155,9 @@ export function frameMailbox(
           ? "report from a team member"
           : m.kind === "user"
             ? "message from the user"
-            : "message";
+            : m.kind === "system"
+              ? "automatic team-coordination notice"
+              : "message";
     parts.push(`--- Message ${i + 1} — from ${senderLabel} (${kindLabel}) ---`, m.message, "");
   });
 
@@ -161,4 +175,27 @@ export function frameMailbox(
   }
 
   return parts.join("\n");
+}
+
+/**
+ * Build the automatic "you didn't report back to the leader" nudge. The orchestrator injects this
+ * into a member's mailbox when the member finished a run but a task the leader delegated is still
+ * outstanding and the member never messaged the leader — the leader would otherwise wait forever,
+ * because a delegated task is only ever considered done once the member explicitly reports it. The
+ * text is fully self-contained (it carries the member's own name for message_team_leader) so it can
+ * be delivered verbatim.
+ */
+export function buildLeaderReportReminder(memberName: string, leaderName: string): string {
+  return [
+    "SYSTEM NOTICE — automatic team-coordination check (not from a teammate).",
+    "",
+    `Your last run ended without you reporting back to the team leader ("${leaderName}"), but a task the leader delegated to you is still open. The leader is NOT notified automatically — a delegated task is only considered complete once you explicitly report it, so the whole team is now waiting on you.`,
+    "",
+    "Take exactly one of these actions now:",
+    `1. If the task is DONE: call message_team_leader (my_name: "${memberName}") with a concise completion report — what you accomplished, the exact file paths you created or changed, the key results/findings, and anything the leader needs to review or hand to the user.`,
+    "2. If the task is NOT finished yet: keep working with your tools until it is genuinely complete, then report to the leader with message_team_leader.",
+    `3. If you are blocked or need clarification: call message_team_leader (my_name: "${memberName}") to tell the leader exactly what you need.`,
+    "",
+    "Do not stay silent and do not end your turn without contacting the leader — the team cannot move forward until the leader hears from you.",
+  ].join("\n");
 }

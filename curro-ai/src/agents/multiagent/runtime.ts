@@ -17,7 +17,7 @@ import { createSubAgentRuntime } from "../subagents.js";
 import { resolveDefaultSubAgents, mergeDefaultSubAgents } from "../sub-agents/index.js";
 import { allowedTeamAgentTools } from "../tools/teamTools.js";
 import { isVisionCapableModel } from "../../utils/vision.js";
-import { frameMailbox } from "./systemprompt.js";
+import { buildLeaderReportReminder, frameMailbox } from "./systemprompt.js";
 import { runHeadAgent } from "./head/runner.js";
 import { runMemberAgent } from "./members/runner.js";
 import {
@@ -26,6 +26,7 @@ import {
   EV_TEAM_MESSAGE,
   EV_TEAM_START,
   EV_TEAM_STATUS,
+  SYSTEM_SENDER_ID,
   USER_SENDER_ID,
   type AgentTeamDefinition,
   type MailboxMessage,
@@ -44,6 +45,14 @@ import type { TeamAgentStatus } from "../tools/types.js";
 const MAX_TEAM_MESSAGES = 400;
 const MAX_AGENT_RUNS = 800;
 
+/**
+ * How many times the orchestrator will automatically nudge a single member to report back to the
+ * leader for one outstanding delegated task before giving up. Kept small so a member that keeps
+ * ignoring the nudge cannot spin the actor forever; the counter resets whenever a fresh task is
+ * delegated to that member.
+ */
+const MAX_LEADER_REPORT_REMINDERS = 2;
+
 /** Runtime state of one team agent (its persistent context + live mailbox + status). */
 interface Actor {
   context: TeamAgentContext;
@@ -52,6 +61,14 @@ interface Actor {
   busy: boolean;
   status: TeamAgentStatus;
   subAgentRuntime: ReturnType<typeof createSubAgentRuntime>;
+  /**
+   * A member has a delegated task outstanding that it has not yet reported to the leader. Set when a
+   * task is delegated to it, cleared as soon as it messages the leader. Drives the automatic
+   * "inform the team leader" nudge so a member that finishes silently never leaves the leader hanging.
+   */
+  pendingLeaderReport: boolean;
+  /** Auto-nudges sent for the current outstanding task; reset when a fresh task is delegated. */
+  leaderReportReminders: number;
 }
 
 export interface TeamOrchestratorDeps {
@@ -140,6 +157,8 @@ export class TeamOrchestrator {
         busy: false,
         status: "idle",
         subAgentRuntime: this.buildSubAgentRuntime(context),
+        pendingLeaderReport: false,
+        leaderReportReminders: 0,
       });
     };
 
@@ -289,6 +308,14 @@ export class TeamOrchestrator {
           status: actor.status,
           error: result.error,
         });
+
+        // Safety net: a member sometimes ends its run without ever calling message_team_leader,
+        // leaving the leader waiting forever on a delegated task (delegated work is only "done"
+        // once explicitly reported). If that happened — the run succeeded, the task is still
+        // outstanding, and nothing new is queued to work on — inject an automatic nudge telling the
+        // member to report back. Bounded by MAX_LEADER_REPORT_REMINDERS so it can never loop forever.
+        this.maybeNudgeMemberToReport(actor, result);
+
         // Loop again if new messages arrived while this run was executing.
       }
     } finally {
@@ -306,8 +333,43 @@ export class TeamOrchestrator {
 
   private triggerLabel(batch: MailboxMessage[]): string {
     if (batch.length === 1 && batch[0]!.kind === "user") return "user request";
-    const froms = [...new Set(batch.map((m) => (m.from === USER_SENDER_ID ? "the user" : m.from)))];
+    if (batch.length === 1 && batch[0]!.kind === "system") return "team-coordination check";
+    const froms = [
+      ...new Set(
+        batch.map((m) =>
+          m.from === USER_SENDER_ID
+            ? "the user"
+            : m.from === SYSTEM_SENDER_ID
+              ? "the system"
+              : m.from,
+        ),
+      ),
+    ];
     return `${batch.length} message(s) from ${froms.join(", ")}`;
+  }
+
+  /**
+   * If a member finished a run but still owes the leader a report (it was delegated a task and never
+   * messaged the leader), queue an automatic nudge into its own mailbox so it runs again and reports.
+   * No-op for the leader, for failed/aborted runs, when the member already has other work queued, or
+   * once the per-task reminder budget is spent. The queued nudge keeps the actor non-quiescent, so
+   * runActor's loop picks it up on the next pass without any extra scheduling.
+   */
+  private maybeNudgeMemberToReport(actor: Actor, result: { ok: boolean }): void {
+    if (actor.context.role !== "member") return;
+    if (!result.ok || this.deps.signal.aborted) return;
+    if (!actor.pendingLeaderReport) return;
+    if (actor.mailbox.length > 0) return;
+    if (actor.leaderReportReminders >= MAX_LEADER_REPORT_REMINDERS) return;
+
+    actor.leaderReportReminders += 1;
+    actor.mailbox.push({
+      from: SYSTEM_SENDER_ID,
+      message: buildLeaderReportReminder(actor.context.id, this.leaderId),
+      kind: "system",
+    });
+    actor.status = "queued";
+    this.emitStatus(actor);
   }
 
   /** Run a single LLM loop for the actor via the head/member runner. */
@@ -448,6 +510,18 @@ export class TeamOrchestrator {
       this.messageCount += 1;
       actor.mailbox.push({ from, message, kind });
       delivered.push(actor.context.id);
+
+      // Track the member<->leader report obligation that powers the automatic "inform the leader"
+      // nudge. Delegating a task to a member opens the obligation (and resets its reminder budget);
+      // any message a member delivers TO the leader (a report, an answer, a question) closes it.
+      if (kind === "delegate" && actor.context.role === "member") {
+        actor.pendingLeaderReport = true;
+        actor.leaderReportReminders = 0;
+      }
+      if (actor.context.id.toLowerCase() === this.leaderId.toLowerCase()) {
+        const sender = this.actor(from);
+        if (sender && sender.context.role === "member") sender.pendingLeaderReport = false;
+      }
       this.deps.send(EV_TEAM_MESSAGE, {
         from,
         to: actor.context.id,

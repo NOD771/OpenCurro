@@ -37,7 +37,11 @@ export interface RunAgentRequest {
   baseUrl?: string;
   /** Full user-defined provider config, present when a `custom_` provider is selected. */
   customProvider?: unknown;
-  maxIterations: number;
+  /**
+   * @deprecated The agent runs with NO iteration cap and this value is ignored. Kept only for
+   * backward compatibility with the wire request; the loop runs until the agent is done or aborted.
+   */
+  maxIterations?: number;
   temperature?: number;
   /**
    * Reasoning effort chosen in Settings: a preset (`low` | `medium` | `high` | `max`)
@@ -103,7 +107,8 @@ export class AgentRunner {
   /**
    * Execute a full autonomous turn: stream reasoning + tokens, run tools natively, and
    * loop (Thought -> Action -> Observation) until the model produces a final answer with
-   * no further tool calls or the iteration limit is hit.
+   * no further tool calls. The loop is UNBOUNDED — there is no iteration limit; the agent
+   * keeps working until it is genuinely done or the turn is aborted.
    */
   async run(
     request: RunAgentRequest,
@@ -166,7 +171,6 @@ export class AgentRunner {
       const hiddenTools = new Set<string>(TEAM_TOOLS);
       if (!reuseSessionsEnabled) for (const name of SESSION_REUSE_TOOLS) hiddenTools.add(name);
       const toolSchemas = this.tools.schemas.filter((s) => !hiddenTools.has(s.function.name));
-      const maxIterations = clampIterations(request.maxIterations, this.config.maxIterations);
       const visionCapable = isVisionCapableModel(request.model, this.config);
       const web: WebToolsConfig = {
         searchProvider: request.searchProvider ?? this.config.searchProvider,
@@ -217,16 +221,18 @@ export class AgentRunner {
       const visibleReasoning: string[] = [];
       let iteration = 0;
 
-      send("iteration", { current: 0, limit: maxIterations });
+      // The agent runs with NO iteration cap. `limit: null` signals "unlimited" to any UI listener.
+      send("iteration", { current: 0, limit: null });
 
-      while (iteration < maxIterations) {
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
         if (signal.aborted) {
           send("done", { ok: false, aborted: true });
           return;
         }
 
         iteration += 1;
-        send("iteration", { current: iteration, limit: maxIterations });
+        send("iteration", { current: iteration, limit: null });
         send("status", { state: "thinking", label: "Thinking..." });
 
         const answerParts: string[] = [];
@@ -376,12 +382,6 @@ export class AgentRunner {
         send("done", { ok: true });
         return;
       }
-
-      send("error", {
-        code: "iteration_limit_reached",
-        message: "Reached the maximum number of iterations before completing the turn.",
-      });
-      send("done", { ok: false });
     } finally {
       // The main agent's turn is over — hand the COMPLETE turn context (full untruncated
       // transcript, the triggering user prompt, and the FINAL memory state) to the background
@@ -452,11 +452,6 @@ function withFirstMessageContext(
   const blocks = [memoryContext.trim(), knowledgeContext.trim()].filter((b) => b.length > 0);
   if (blocks.length === 0) return userMessage;
   return `${blocks.join("\n\n")}\n\n${userMessage}`;
-}
-
-function clampIterations(requested: number, max: number): number {
-  if (!Number.isFinite(requested) || requested < 1) return max;
-  return Math.min(Math.floor(requested), max);
 }
 
 function normalize(text: string): string {

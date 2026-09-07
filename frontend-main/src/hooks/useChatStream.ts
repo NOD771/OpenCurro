@@ -99,7 +99,7 @@ function buildStartRequest(convId: string, text: string): StreamRequest {
     base_url: settings.baseUrl || undefined,
     custom_provider:
       isCustom && customProvider ? toCustomProviderConfig(customProvider, settings.model) : undefined,
-    max_iterations: 1000,
+    // The agent runs with no iteration cap; max_iterations is intentionally omitted (backend ignores it).
     temperature: typeof settings.temperature === "number" ? settings.temperature : undefined,
     effort: settings.effort?.trim() || undefined,
     tavily_api_key: settings.tavilyApiKey || undefined,
