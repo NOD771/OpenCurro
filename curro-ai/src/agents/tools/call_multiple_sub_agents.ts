@@ -24,7 +24,7 @@ const agentSchema = z.object({
         "continue. Defaults to true. When true, you block until this sub-agent completes and its " +
         "output is returned inline. When false, this sub-agent is launched detached in the " +
         "background: the call does not wait for it, its final report is written to its own " +
-        '".curro/sub-agent" file (read it later with file_read), and it keeps running even if you ' +
+        '".gptloop/sub-agent" file (read it later with file_read), and it keeps running even if you ' +
         "move on or this turn ends. Entries are independent — you can wait on some while others run " +
         "in the background in the same call.",
     ),

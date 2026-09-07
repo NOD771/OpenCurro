@@ -1,4 +1,4 @@
-# Curro AI
+# GPTLoop AI
 
 A fast, reliable, autonomous **local** coding agent — a second backend for this repo, built from
 scratch in **TypeScript 7** on **Express**. It runs entirely on the machine where you start it: files

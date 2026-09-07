@@ -17,7 +17,7 @@ describe("bash_write_to_process", () => {
 
   before(async () => {
     shellSessionStore.clear();
-    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "curro-write-"));
+    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "gptloop-write-"));
     ctx = { workspaceRoot: workspace, shellTimeoutMs: 10_000 };
     registry = new ToolRegistry().registerAll([
       shellTool,

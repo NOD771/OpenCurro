@@ -16,7 +16,7 @@ describe("shell_view", () => {
 
   before(async () => {
     shellSessionStore.clear();
-    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "curro-shellview-"));
+    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "gptloop-shellview-"));
     ctx = { workspaceRoot: workspace, shellTimeoutMs: 10_000 };
     registry = new ToolRegistry().registerAll([shellTool, shellViewTool]);
   });

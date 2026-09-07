@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import {
-  type CurroDatabase,
+  type GptLoopDatabase,
   isAppStateKey,
   isSafeSessionId,
   createChatSessionId,
@@ -14,7 +14,7 @@ import {
  * `PUT/GET /api/sessions/:id`.
  */
 
-export function buildStateRouter(db: CurroDatabase): Router {
+export function buildStateRouter(db: GptLoopDatabase): Router {
   const router = Router();
 
   /** Everything the frontend needs to boot, in one round trip. */
@@ -54,7 +54,7 @@ export function buildStateRouter(db: CurroDatabase): Router {
   return router;
 }
 
-export function buildSessionsRouter(db: CurroDatabase): Router {
+export function buildSessionsRouter(db: GptLoopDatabase): Router {
   const router = Router();
 
   /** Create a new session with a server-generated 20-character id. */

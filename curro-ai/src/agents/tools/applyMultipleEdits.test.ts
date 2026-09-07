@@ -13,7 +13,7 @@ describe("apply_multiple_edits tool", () => {
   let registry: ToolRegistry;
 
   before(async () => {
-    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "curro-multiedit-"));
+    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "gptloop-multiedit-"));
     ctx = { workspaceRoot: workspace, shellTimeoutMs: 10_000 };
     registry = new ToolRegistry().register(applyMultipleEditsTool);
   });

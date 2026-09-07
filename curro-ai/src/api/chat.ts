@@ -11,7 +11,7 @@ import { normalizeTodos } from "../agents/todos.js";
 import { normalizeMemoryFiles } from "../agents/memory.js";
 import { normalizeKnowledgeFiles } from "../agents/knowledge.js";
 import { initSSE, formatSSE } from "../utils/sse.js";
-import type { CurroDatabase } from "../database/index.js";
+import type { GptLoopDatabase } from "../database/index.js";
 import type { MultiAgentRunner } from "../agents/multiagent/index.js";
 import type { AgentTeamDefinition, TeamMemberDefinition, RunTeamRequest } from "../agents/multiagent/index.js";
 
@@ -183,7 +183,7 @@ export function buildChatRouter(
   config: AppConfig,
   planApprovals: PlanApprovalStore,
   askQuestions: QuestionStore,
-  db: CurroDatabase,
+  db: GptLoopDatabase,
   multiAgent: MultiAgentRunner,
 ): Router {
   const router = Router();
@@ -452,7 +452,7 @@ export function buildChatRouter(
  */
 function replayFromDatabase(
   res: Response,
-  db: CurroDatabase,
+  db: GptLoopDatabase,
   chatId: string,
   sinceId: number,
 ): void {

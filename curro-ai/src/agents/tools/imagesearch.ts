@@ -261,7 +261,7 @@ async function searchDuckDuckGoImages(query: string, ctx: ToolContext): Promise<
       `https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images`,
       {
         method: "GET",
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; CurroAI/1.0)" },
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; GptLoopAI/1.0)" },
       },
       ctx,
     );
@@ -284,7 +284,7 @@ async function searchDuckDuckGoImages(query: string, ctx: ToolContext): Promise<
       url.toString(),
       {
         method: "GET",
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; CurroAI/1.0)" },
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; GptLoopAI/1.0)" },
       },
       ctx,
     )) as {

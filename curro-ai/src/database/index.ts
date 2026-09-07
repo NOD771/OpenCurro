@@ -12,7 +12,7 @@ import { AppStateRepo } from "./repositories/appStateRepo.js";
 import { MemoryAgentRunsRepo } from "./repositories/memoryAgentRunsRepo.js";
 
 export { createChatSessionId, createSubAgentSessionId, isSafeSessionId } from "./ids.js";
-export { resolveDatabasePath, CURRO_DATA_DIR, DATABASE_FILE_NAME } from "./connection.js";
+export { resolveDatabasePath, GPTLOOP_DATA_DIR, DATABASE_FILE_NAME } from "./connection.js";
 export { APP_STATE_KEYS, isAppStateKey, type AppStateKey } from "./repositories/appStateRepo.js";
 export type { SessionRow } from "./repositories/sessionsRepo.js";
 export type { StoredStreamEvent } from "./repositories/eventsRepo.js";
@@ -28,10 +28,10 @@ export type {
  * The application's persistence facade. Everything the system produces — main-agent
  * streaming, sub-agent streaming, tool calls + results, transcripts, UI snapshots,
  * settings/API keys, skills, knowledge, memory, custom sub-agents — is stored here,
- * in a single SQLite (3.53.4) database at `<workspace>/.curro/curro.db` that is
+ * in a single SQLite (3.53.4) database at `<workspace>/.gptloop/gptloop.db` that is
  * created automatically on boot.
  */
-export class CurroDatabase {
+export class GptLoopDatabase {
   readonly sessions: SessionsRepo;
   readonly messages: MessagesRepo;
   readonly events: EventsRepo;
@@ -60,20 +60,20 @@ export class CurroDatabase {
   }
 
   /** Open (creating if needed) the database for a workspace and start maintenance. */
-  static open(workspaceRoot: string): CurroDatabase {
+  static open(workspaceRoot: string): GptLoopDatabase {
     const dbPath = resolveDatabasePath(workspaceRoot);
-    const exclusive = process.env.CURRO_DB_EXCLUSIVE !== "0";
+    const exclusive = process.env.GPTLOOP_DB_EXCLUSIVE !== "0";
     const db = openDatabase(dbPath, { exclusiveLocking: exclusive });
     applySchema(db);
 
-    const instance = new CurroDatabase(db, dbPath);
+    const instance = new GptLoopDatabase(db, dbPath);
     // After a restart nothing can still be running.
     instance.sessions.resetRunningFlags();
     instance.memoryAgentRuns.failInterrupted();
     instance.maintenance.start();
 
     // eslint-disable-next-line no-console
-    console.log(`[curro-db] SQLite ${sqliteVersion(db)} ready at ${dbPath}`);
+    console.log(`[gptloop-db] SQLite ${sqliteVersion(db)} ready at ${dbPath}`);
     return instance;
   }
 

@@ -1,8 +1,8 @@
 {
-  "name": "curro-ai",
+  "name": "gptloop",
   "version": "1.0.0",
   "private": true,
-  "description": "Curro AI — a fast, reliable, autonomous local coding agent (TypeScript + Express).",
+  "description": "GPTLoop AI — a fast, reliable, autonomous local coding agent (TypeScript + Express).",
   "type": "module",
   "engines": {
     "node": ">=20.9.0"

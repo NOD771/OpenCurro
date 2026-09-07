@@ -3,7 +3,7 @@ import type { ProviderRegistry } from "../providers/registry.js";
 import { resolveProvider } from "../providers/registry.js";
 import type { ToolRegistry } from "../tools/index.js";
 import type { MemoryFile } from "../tools/types.js";
-import type { CurroDatabase } from "../../database/index.js";
+import type { GptLoopDatabase } from "../../database/index.js";
 import { createSubAgentSessionId } from "../../database/ids.js";
 import type {
   MemoryAgentRunCounts,
@@ -50,7 +50,7 @@ export class MemoryAgentService {
     private readonly providers: ProviderRegistry,
     private readonly tools: ToolRegistry,
     private readonly config: AppConfig,
-    private readonly db: CurroDatabase,
+    private readonly db: GptLoopDatabase,
   ) {}
 
   /**

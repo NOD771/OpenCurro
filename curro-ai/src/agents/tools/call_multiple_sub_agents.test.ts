@@ -66,7 +66,7 @@ interface Harness {
 }
 
 async function makeHarness(context: StoredMessage[] = []): Promise<Harness> {
-  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "curro-multi-"));
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "gptloop-multi-"));
   const tools = new ToolRegistry().registerAll([fileReadTool]);
   const config = { workspaceRoot, shellTimeoutMs: 10_000 } as AppConfig;
   const { provider, calls } = makeFakeProvider();
@@ -248,7 +248,7 @@ describe("call_multiple_sub_agents runMany (concurrent execution)", () => {
     assert.equal(beta.ok, true);
     assert.equal(beta.wait_for_output, false);
     assert.equal(beta.background, true);
-    assert.match(String(beta.output_file), /\.curro\/sub-agent\/.*\.md$/);
+    assert.match(String(beta.output_file), /\.gptloop\/sub-agent\/.*\.md$/);
   });
 
   it("gives each sub-agent its own unique 10-character session id", async () => {

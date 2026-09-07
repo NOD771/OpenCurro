@@ -13,9 +13,9 @@ const SAMPLE_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Curro AI Test Page</title>
+  <title>GPTLoop AI Test Page</title>
   <meta name="description" content="A test page for the scraper." />
-  <meta property="og:title" content="Curro AI Test Page" />
+  <meta property="og:title" content="GPTLoop AI Test Page" />
   <meta property="og:image" content="https://example.com/og.png" />
   <link rel="canonical" href="https://example.com/articles/test" />
 </head>
@@ -53,7 +53,7 @@ describe("scraper: html parsing & markdown", () => {
   it("extracts metadata, links and images from a parsed page", () => {
     const root = parseHtml(SAMPLE_HTML);
     const meta = extractMetadata(root, "https://example.com/articles/test");
-    assert.equal(meta.title, "Curro AI Test Page");
+    assert.equal(meta.title, "GPTLoop AI Test Page");
     assert.equal(meta.description, "A test page for the scraper.");
     assert.equal(meta.lang, "en");
     assert.equal(meta.canonical_url, "https://example.com/articles/test");
@@ -96,7 +96,7 @@ describe("scraper: scrapePage (free, keyless)", () => {
       format: "markdown",
     });
     assert.equal(result.status, 200);
-    assert.equal(result.title, "Curro AI Test Page");
+    assert.equal(result.title, "GPTLoop AI Test Page");
     assert.equal(result.description, "A test page for the scraper.");
     assert.equal(result.format, "markdown");
     assert.match(result.content, /# Welcome/);
@@ -150,7 +150,7 @@ describe("scraper: integration with the web tools", () => {
     const data = result.data as { provider: string; mode: string; title: string };
     assert.equal(data.provider, "builtin");
     assert.equal(data.mode, "single");
-    assert.equal(data.title, "Curro AI Test Page");
+    assert.equal(data.title, "GPTLoop AI Test Page");
     mock.restoreAll();
   });
 
@@ -168,7 +168,7 @@ describe("scraper: integration with the web tools", () => {
     assert.equal(data.provider, "builtin");
     assert.equal(data.mode, "crawl");
     assert.ok(data.page_count >= 1);
-    assert.equal(data.pages[0]?.title, "Curro AI Test Page");
+    assert.equal(data.pages[0]?.title, "GPTLoop AI Test Page");
     mock.restoreAll();
   });
 
@@ -184,7 +184,7 @@ describe("scraper: integration with the web tools", () => {
     assert.equal(result.ok, true, JSON.stringify(result.error));
     const data = result.data as { provider: string; title: string };
     assert.equal(data.provider, "builtin");
-    assert.equal(data.title, "Curro AI Test Page");
+    assert.equal(data.title, "GPTLoop AI Test Page");
     assert.equal(calls.length, 1);
     mock.restoreAll();
   });

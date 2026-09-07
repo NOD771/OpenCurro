@@ -16,13 +16,13 @@ import { buildToolsRouter } from "./api/tools.js";
 import { buildMemoryAgentRouter } from "./api/memoryagent.js";
 import { MemoryAgentService } from "./agents/memoryagent/index.js";
 import { MultiAgentRunner } from "./agents/multiagent/index.js";
-import { CurroDatabase } from "./database/index.js";
+import { GptLoopDatabase } from "./database/index.js";
 
 function main(): void {
   ensureWorkspace();
 
-  // The SQLite database (workspace/.curro/curro.db) is created automatically on boot.
-  const db = CurroDatabase.open(config.workspaceRoot);
+  // The SQLite database (workspace/.gptloop/gptloop.db) is created automatically on boot.
+  const db = GptLoopDatabase.open(config.workspaceRoot);
 
   const providers = createProviderRegistry();
   const tools = createToolRegistry();
@@ -49,7 +49,7 @@ function main(): void {
   app.get("/health", (_req, res) => {
     res.json({
       status: "healthy",
-      service: "curro-ai",
+      service: "gptloop",
       workspace: config.workspaceRoot,
       providers: providers.list().map((p) => p.id),
       tools: tools.schemas.map((s) => s.function.name),
@@ -70,9 +70,9 @@ function main(): void {
 
   const server = app.listen(config.port, () => {
     // eslint-disable-next-line no-console
-    console.log(`[curro-ai] listening on http://localhost:${config.port}`);
+    console.log(`[gptloop] listening on http://localhost:${config.port}`);
     // eslint-disable-next-line no-console
-    console.log(`[curro-ai] workspace: ${config.workspaceRoot}`);
+    console.log(`[gptloop] workspace: ${config.workspaceRoot}`);
   });
 
   const shutdown = () => {

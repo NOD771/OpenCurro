@@ -35,7 +35,7 @@ import { SUB_AGENT_RESTRICTED_TOOLS } from "./tools/subAgentRestrictedTools.js";
 export const SUB_AGENT_EXCLUDED_TOOLS: readonly string[] = SUB_AGENT_RESTRICTED_TOOLS;
 
 /** Directory (relative to the workspace root) where background sub-agent outputs are written. */
-export const SUB_AGENT_OUTPUT_DIR = ".curro/sub-agent";
+export const SUB_AGENT_OUTPUT_DIR = ".gptloop/sub-agent";
 
 export interface SubAgentRuntimeDeps {
   /** The resolved provider serving this turn (built-in or custom). */
@@ -131,7 +131,7 @@ class SubAgentRunner {
    * runs to completion and its final report is returned directly to the main agent. When it is
    * false the sub-agent is launched in the BACKGROUND — fully detached from the main agent's turn
    * (its own abort signal, so aborting/ending the main turn never stops it) — and the tool returns
-   * immediately with the path of the ".curro/sub-agent" file where its output will be written.
+   * immediately with the path of the ".gptloop/sub-agent" file where its output will be written.
    */
   async run(
     params: {
@@ -190,7 +190,7 @@ class SubAgentRunner {
    * conversation — exactly like an individual call_sub_agent invocation. The runs execute in
    * parallel; the returned promise resolves once every `wait_for_output: true` entry has finished
    * (their outputs are returned inline) and every `wait_for_output: false` entry has been launched
-   * detached in the background (each writing its final report to its own ".curro/sub-agent" file).
+   * detached in the background (each writing its final report to its own ".gptloop/sub-agent" file).
    *
    * Every child run streams the same `sub_agent_*` side-channel events as call_sub_agent, but each
    * is stamped with a unique child event id and the shared `parent_tool_id`, so the frontend renders
@@ -472,7 +472,7 @@ class SubAgentRunner {
    * Launch the sub-agent in the background and return immediately. The run is fully detached from
    * the main agent's turn: it uses its own AbortController (never the turn's signal), so aborting,
    * stopping, or losing the connection to the main agent does NOT stop the sub-agent. Its final
-   * report is written to a ".curro/sub-agent/<name>-output-<id>.md" file the main agent reads later.
+   * report is written to a ".gptloop/sub-agent/<name>-output-<id>.md" file the main agent reads later.
    */
   private async runBackground(
     definition: SubAgentDefinition,

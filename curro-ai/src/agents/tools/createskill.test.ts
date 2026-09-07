@@ -16,7 +16,7 @@ describe("create_skill tool", () => {
   });
 
   beforeEach(async () => {
-    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "curro-create-skill-"));
+    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "gptloop-create-skill-"));
   });
 
   after(async () => {

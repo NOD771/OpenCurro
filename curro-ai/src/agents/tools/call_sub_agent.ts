@@ -17,7 +17,7 @@ const schema = z.object({
       "Whether to wait for the sub-agent to finish and return its final result. Set to true when " +
         "the result is needed immediately; set to false to run the sub-agent in the background " +
         "without waiting for its output. When false, the tool returns right away with the path of a " +
-        '".curro/sub-agent" file where the sub-agent\'s output will be written — read it later with ' +
+        '".gptloop/sub-agent" file where the sub-agent\'s output will be written — read it later with ' +
         "file_read. Background sub-agents keep running even if this main agent is aborted or stops.",
     ),
   send_my_context: z

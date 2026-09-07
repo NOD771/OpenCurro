@@ -10,8 +10,8 @@ const schema = z.object({
     .trim()
     .min(1, "file_path must be a non-empty string")
     .describe(
-      "Absolute filesystem path to the directory where the .curro/skills directory should be " +
-        "initialized. The tool creates a .curro/skills directory inside this path if it does not already " +
+      "Absolute filesystem path to the directory where the .gptloop/skills directory should be " +
+        "initialized. The tool creates a .gptloop/skills directory inside this path if it does not already " +
         "exist. Example: /workspace/my-project",
     ),
   skill_names: z
@@ -36,8 +36,8 @@ const schema = z.object({
 export const skillInitializeTool = defineTool({
   name: "skill_initialize",
   description:
-    "Initialize one or more skills inside a workspace .curro/skills directory. The tool creates the " +
-    ".curro/skills directory at the specified absolute path if it does not already exist, then " +
+    "Initialize one or more skills inside a workspace .gptloop/skills directory. The tool creates the " +
+    ".gptloop/skills directory at the specified absolute path if it does not already exist, then " +
     "initializes the requested skills inside it by writing each skill's files (SKILL.md plus any " +
     "reference/example/script files) to disk. After initializing, read a skill's SKILL.md with " +
     "file_read to learn how to use it. Skill names must exactly match names returned by list_skills.",

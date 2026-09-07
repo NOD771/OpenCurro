@@ -206,7 +206,7 @@ export class AgentRunner {
       });
 
       // Skill runtime for this turn — enumerates the user's skills (list_skills) and materializes
-      // them onto disk inside the workspace's ".curro/skills" directory (skill_initialize). Skills, like
+      // them onto disk inside the workspace's ".gptloop/skills" directory (skill_initialize). Skills, like
       // sub-agents, are authored in the frontend and travel with each turn. The agent's built-in
       // default skills are merged underneath so they are pre-added and always available, unless
       // the user provides their own skill with the same name (which overrides the default).

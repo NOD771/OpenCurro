@@ -41,7 +41,7 @@ const DEFINITIONS: SubAgentDefinition[] = [
 ];
 
 async function makeRuntime(chatId: string): Promise<{ runtime: SubAgentRuntime; workspaceRoot: string }> {
-  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "curro-listsess-"));
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "gptloop-listsess-"));
   const tools = new ToolRegistry().registerAll([fileReadTool]);
   const config = { workspaceRoot, shellTimeoutMs: 10_000 } as AppConfig;
   const runtime = createSubAgentRuntime({

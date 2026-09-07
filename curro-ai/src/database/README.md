@@ -1,11 +1,11 @@
-# Curro Database (SQLite 3.53.4)
+# GPTLoop Database (SQLite 3.53.4)
 
 Everything the system produces is persisted here — main-agent streaming, sub-agent
 streaming (any number of concurrent sub-agents), tool calls + results, chat
 transcripts, UI conversation snapshots, settings (including API keys), user-created
 skills, knowledge files, memory files, custom sub-agents, and todos.
 
-The database file is created automatically on boot at **`<workspace>/.curro/curro.db`**.
+The database file is created automatically on boot at **`<workspace>/.gptloop/gptloop.db`**.
 The browser keeps **nothing** in localStorage/sessionStorage/IndexedDB — the frontend
 hydrates from `GET /api/state` and streams live over SSE; SQLite is the single source
 of durability.
@@ -14,7 +14,7 @@ of durability.
 
 | File | Responsibility |
 | --- | --- |
-| `index.ts` | `CurroDatabase` facade: opens the DB, wires repos + queue + maintenance, clean shutdown. |
+| `index.ts` | `GptLoopDatabase` facade: opens the DB, wires repos + queue + maintenance, clean shutdown. |
 | `connection.ts` | Opens the file, applies the performance PRAGMAs (WAL, NORMAL sync, 64MB cache, exclusive locking, mmap…). |
 | `schema.ts` | DDL for all tables/indexes + additive migrations (`user_version`). |
 | `ids.ts` | 20-char chat-session ids and 10-char sub-agent session ids (digits + all letters). |
@@ -53,7 +53,7 @@ of durability.
 PRAGMA journal_mode = WAL;         -- non-blocking concurrent writes
 PRAGMA synchronous = NORMAL;       -- decouple fsync from the app thread
 PRAGMA cache_size = -64000;        -- exactly 64MB RAM page cache
-PRAGMA locking_mode = EXCLUSIVE;   -- lock the file to this process (CURRO_DB_EXCLUSIVE=0 to disable)
+PRAGMA locking_mode = EXCLUSIVE;   -- lock the file to this process (GPTLOOP_DB_EXCLUSIVE=0 to disable)
 PRAGMA temp_store = MEMORY;
 PRAGMA mmap_size = 268435456;      -- 256MB mmap reads
 PRAGMA wal_autocheckpoint = 2000;

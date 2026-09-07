@@ -95,7 +95,7 @@ export interface SubAgentRuntime {
    * Execute a sub-agent for the given task. When `wait_for_output` is true (default) the sub-agent
    * runs to completion and its final output is returned directly. When false the sub-agent is
    * launched in the background — fully detached from the main turn — and the tool returns
-   * immediately with the ".curro/sub-agent" file path where the output will be written.
+   * immediately with the ".gptloop/sub-agent" file path where the output will be written.
    * When `send_my_context` is true a summary of the main agent's current conversation is shared
    * with the sub-agent so it understands the broader goal; when false (default) the sub-agent sees
    * only `task`. Streams live progress (tokens, reasoning, nested tool calls) via SSE side-channel
@@ -116,7 +116,7 @@ export interface SubAgentRuntime {
    * exactly like a call_sub_agent invocation. The main agent blocks until every entry whose
    * `wait_for_output` is true (the default) has finished, and their outputs are returned inline.
    * Entries whose `wait_for_output` is false are launched detached in the background: the call does
-   * not wait for them, and each writes its final report to its own ".curro/sub-agent" file for the
+   * not wait for them, and each writes its final report to its own ".gptloop/sub-agent" file for the
    * main agent to read later. When `send_my_output` is true for an entry, a summary of the main
    * agent's current conversation is shared with that sub-agent. Streams the same `sub_agent_*`
    * side-channel events as call_sub_agent, additionally stamped with `parent_tool_id` so the UI can
@@ -157,7 +157,7 @@ export interface SkillFileDefinition {
  * packaged capability — a folder named after the skill, containing an entry markdown file (by
  * convention SKILL.md, but renameable) plus any number of reference/example/script files. The
  * agent discovers skills with list_skills, then materializes the ones it needs onto disk (inside
- * a workspace ".curro/skills" directory) with skill_initialize before reading their files.
+ * a workspace ".gptloop/skills" directory) with skill_initialize before reading their files.
  */
 export interface SkillDefinition {
   /** Folder name and unique identifier used by skill_initialize (e.g. "git-workflow"). */
@@ -175,9 +175,9 @@ export interface SkillDefinition {
 /** One skill that skill_initialize successfully wrote to disk. */
 export interface InitializedSkill {
   skill_name: string;
-  /** Skill folder path relative to the provided file_path, e.g. ".curro/skills/git-workflow". */
+  /** Skill folder path relative to the provided file_path, e.g. ".gptloop/skills/git-workflow". */
   path: string;
-  /** Entry file path relative to the provided file_path, e.g. ".curro/skills/git-workflow/SKILL.md". */
+  /** Entry file path relative to the provided file_path, e.g. ".gptloop/skills/git-workflow/SKILL.md". */
   skill_file: string;
   /** All file paths written for this skill, relative to the provided file_path. */
   files: string[];
@@ -425,7 +425,7 @@ export interface SkillRuntime {
    */
   register(skill: SkillDefinition): void;
   /**
-   * Create a ".curro/skills" directory under `filePath` (if missing) and write each requested skill's
+   * Create a ".gptloop/skills" directory under `filePath` (if missing) and write each requested skill's
    * files into it. Skills that are unknown, disabled, or already initialized are reported in
    * `failed` without aborting the others.
    */

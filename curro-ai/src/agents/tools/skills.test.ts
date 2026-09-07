@@ -53,7 +53,7 @@ describe("skills tools", () => {
   });
 
   beforeEach(async () => {
-    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "curro-skills-"));
+    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "gptloop-skills-"));
   });
 
   after(async () => {
@@ -89,7 +89,7 @@ describe("skills tools", () => {
     assert.match(String(git.tree), /references\//);
   });
 
-  it("skill_initialize creates .curro/skills and writes all files, returning relative paths", async () => {
+  it("skill_initialize creates .gptloop/skills and writes all files, returning relative paths", async () => {
     const result = await registry.execute(
       "skill_initialize",
       { file_path: workspace, skill_names: ["git-workflow", "notion"] },
@@ -106,25 +106,25 @@ describe("skills tools", () => {
     assert.equal(data.initialized.length, 2);
 
     const git = data.initialized.find((s) => s.skill_name === "git-workflow")!;
-    assert.equal(git.path, ".curro/skills/git-workflow");
-    assert.equal(git.skill_file, ".curro/skills/git-workflow/SKILL.md");
+    assert.equal(git.path, ".gptloop/skills/git-workflow");
+    assert.equal(git.skill_file, ".gptloop/skills/git-workflow/SKILL.md");
 
     // Files actually exist on disk.
     const skillMd = await fs.readFile(
-      path.join(workspace, ".curro", "skills", "git-workflow", "SKILL.md"),
+      path.join(workspace, ".gptloop", "skills", "git-workflow", "SKILL.md"),
       "utf8",
     );
     assert.match(skillMd, /# Git Workflow/);
     const branching = await fs.readFile(
-      path.join(workspace, ".curro", "skills", "git-workflow", "references", "branching.md"),
+      path.join(workspace, ".gptloop", "skills", "git-workflow", "references", "branching.md"),
       "utf8",
     );
     assert.equal(branching, "branching");
 
     // Renamed entry file is honored.
     const notion = data.initialized.find((s) => s.skill_name === "notion")!;
-    assert.equal(notion.skill_file, ".curro/skills/notion/GUIDE.md");
-    await fs.readFile(path.join(workspace, ".curro", "skills", "notion", "GUIDE.md"), "utf8");
+    assert.equal(notion.skill_file, ".gptloop/skills/notion/GUIDE.md");
+    await fs.readFile(path.join(workspace, ".gptloop", "skills", "notion", "GUIDE.md"), "utf8");
 
     await fs.rm(workspace, { recursive: true, force: true });
   });
@@ -255,7 +255,7 @@ describe("skills tools", () => {
 
     // Files actually landed on disk.
     const md = await fs.readFile(
-      path.join(workspace, ".curro", "skills", "deploy-helper", "SKILL.md"),
+      path.join(workspace, ".gptloop", "skills", "deploy-helper", "SKILL.md"),
       "utf8",
     );
     assert.match(md, /# Deploy/);

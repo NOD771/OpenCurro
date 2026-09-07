@@ -54,7 +54,7 @@ async function makeHarness(chatId: string): Promise<{
   events: Array<{ event: string; data: Record<string, unknown> }>;
   workspaceRoot: string;
 }> {
-  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "curro-reuse-"));
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "gptloop-reuse-"));
   const tools = new ToolRegistry().registerAll([fileReadTool]);
   const config = { workspaceRoot, shellTimeoutMs: 10_000 } as AppConfig;
   const { provider, requests } = makeFakeProvider();

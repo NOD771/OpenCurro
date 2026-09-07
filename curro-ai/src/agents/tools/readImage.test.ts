@@ -25,7 +25,7 @@ describe("read_image tool", () => {
   let registry: ToolRegistry;
 
   before(async () => {
-    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "curro-readimage-"));
+    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "gptloop-readimage-"));
     ctx = { workspaceRoot: workspace, shellTimeoutMs: 10_000 };
     registry = new ToolRegistry().register(readImageTool);
   });

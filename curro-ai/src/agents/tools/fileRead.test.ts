@@ -19,7 +19,7 @@ describe("file_read tool", () => {
   let registry: ToolRegistry;
 
   before(async () => {
-    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "curro-fileread-"));
+    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "gptloop-fileread-"));
     ctx = { workspaceRoot: workspace, shellTimeoutMs: 10_000 };
     registry = new ToolRegistry().register(fileReadTool);
   });

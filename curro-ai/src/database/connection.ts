@@ -5,7 +5,7 @@ import Database from "better-sqlite3";
 /**
  * SQLite connection management.
  *
- * The database file lives at `<workspace>/.curro/curro.db` and is created automatically
+ * The database file lives at `<workspace>/.gptloop/gptloop.db` and is created automatically
  * the first time the agent starts. better-sqlite3 bundles SQLite 3.53.4 and executes
  * statements synchronously — every write on a request/streaming path therefore goes
  * through the batched {@link ../writeQueue.ts DatabaseWriteQueue}, never directly,
@@ -13,21 +13,21 @@ import Database from "better-sqlite3";
  */
 
 /** Directory (inside the workspace) that holds the database file. */
-export const CURRO_DATA_DIR = ".curro";
+export const GPTLOOP_DATA_DIR = ".gptloop";
 
-/** Database file name inside the `.curro` folder. */
-export const DATABASE_FILE_NAME = "curro.db";
+/** Database file name inside the `.gptloop` folder. */
+export const DATABASE_FILE_NAME = "gptloop.db";
 
 /** Resolve the absolute path of the database file for a workspace. */
 export function resolveDatabasePath(workspaceRoot: string): string {
-  return path.join(workspaceRoot, CURRO_DATA_DIR, DATABASE_FILE_NAME);
+  return path.join(workspaceRoot, GPTLOOP_DATA_DIR, DATABASE_FILE_NAME);
 }
 
 export interface ConnectionOptions {
   /**
    * Lock the file strictly to this process (removes per-statement OS lock overhead).
    * Defaults to true — this is a local, single-process application. Set the
-   * CURRO_DB_EXCLUSIVE=0 env var to disable (e.g. to inspect the DB while running).
+   * GPTLOOP_DB_EXCLUSIVE=0 env var to disable (e.g. to inspect the DB while running).
    */
   exclusiveLocking?: boolean;
 }

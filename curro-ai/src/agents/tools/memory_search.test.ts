@@ -43,11 +43,11 @@ describe("memory_search tool", () => {
     "", // 2
     "Name: Ada", // 3
     "Prefers TypeScript and concise answers.", // 4
-    "Works on the curro-ai project.", // 5
+    "Works on the gptloop project.", // 5
   ].join("\n");
 
   const PROJECT = [
-    "# curro-ai", // 1
+    "# gptloop", // 1
     "", // 2
     "A local-first agent.", // 3
     "TypeScript everywhere.", // 4
@@ -65,7 +65,7 @@ describe("memory_search tool", () => {
   it("returns paths, line numbers and the matching line content", async () => {
     const { ctx } = ctxFor([
       { path: "USER.md", content: USER },
-      { path: "projects/curro-ai.md", content: PROJECT },
+      { path: "projects/gptloop.md", content: PROJECT },
     ]);
     const res = await registry.execute("memory_search", { query: "typescript" }, ctx);
     assert.equal(res.ok, true);
@@ -78,7 +78,7 @@ describe("memory_search tool", () => {
         preview: "LINE 4: Prefers TypeScript and concise answers.",
       },
       {
-        path: "memory/projects/curro-ai.md",
+        path: "memory/projects/gptloop.md",
         lines: [4],
         matches: [{ line: 4, content: "TypeScript everywhere." }],
         preview: "LINE 4: TypeScript everywhere.",
@@ -99,9 +99,9 @@ describe("memory_search tool", () => {
         lines: [3, 5],
         matches: [
           { line: 3, content: "Name: Ada" },
-          { line: 5, content: "Works on the curro-ai project." },
+          { line: 5, content: "Works on the gptloop project." },
         ],
-        preview: "LINE 3: Name: Ada\nLINE 5: Works on the curro-ai project.",
+        preview: "LINE 3: Name: Ada\nLINE 5: Works on the gptloop project.",
       },
     ]);
   });

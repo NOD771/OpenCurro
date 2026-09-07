@@ -187,7 +187,7 @@ async function searchDuckDuckGo(query: string, ctx: ToolContext): Promise<Search
         method: "GET",
         headers: {
           "User-Agent":
-            "Mozilla/5.0 (compatible; CurroAI/1.0; +https://github.com/anomalyco/opencode)",
+            "Mozilla/5.0 (compatible; GptLoopAI/1.0; +https://github.com/anomalyco/opencode)",
         },
       },
       ctx,
@@ -211,7 +211,7 @@ async function searchDuckDuckGo(query: string, ctx: ToolContext): Promise<Search
   if (results.length === 0) {
     try {
       const data = (await fetchJson(
-        `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1&t=curro-ai`,
+        `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1&t=gptloop`,
         { method: "GET" },
         ctx,
       )) as {

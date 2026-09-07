@@ -18,7 +18,7 @@ describe("shall_tool", () => {
   let registry: ToolRegistry;
 
   before(async () => {
-    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "curro-shell-"));
+    workspace = await fs.mkdtemp(path.join(os.tmpdir(), "gptloop-shell-"));
     ctx = { workspaceRoot: workspace, shellTimeoutMs: 10_000 };
     registry = new ToolRegistry().register(shellTool);
   });

@@ -7,7 +7,7 @@ dotenv.config();
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
-/** Root of the curro-ai package (one level above src/). */
+/** Root of the gptloop package (one level above src/). */
 export const PROJECT_ROOT = path.resolve(currentDir, "..");
 
 function resolveWorkspaceRoot(): string {

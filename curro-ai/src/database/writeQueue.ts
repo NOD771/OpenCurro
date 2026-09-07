@@ -235,7 +235,7 @@ export class DatabaseWriteQueue {
       } catch (error) {
         // Persistence must never take down streaming; drop the failed chunk and log.
         // eslint-disable-next-line no-console
-        console.error("[curro-db] flush failed:", error);
+        console.error("[gptloop-db] flush failed:", error);
       }
       if (this.pendingEvents.length > 0 || this.pendingMessages.size > 0) {
         setImmediate(step);

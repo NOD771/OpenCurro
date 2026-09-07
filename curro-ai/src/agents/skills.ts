@@ -13,7 +13,7 @@ import type {
 } from "./tools/types.js";
 
 /** Name of the directory skills are materialized into, created under the caller-provided path. */
-export const SKILLS_DIR = ".curro/skills";
+export const SKILLS_DIR = ".gptloop/skills";
 
 /** Default entry file name when a skill does not specify one. */
 export const DEFAULT_SKILL_FILE = "SKILL.md";
@@ -21,7 +21,7 @@ export const DEFAULT_SKILL_FILE = "SKILL.md";
 /**
  * Build the SkillRuntime bound to a single main-agent turn. The returned object is injected into
  * the ToolContext so list_skills / skill_initialize can enumerate the user's skills and write
- * them onto disk inside the workspace's ".curro/skills" directory.
+ * them onto disk inside the workspace's ".gptloop/skills" directory.
  */
 export function createSkillRuntime(definitions: SkillDefinition[]): SkillRuntime {
   const runner = new SkillRunner(definitions);
@@ -76,7 +76,7 @@ class SkillRunner {
   }
 
   /**
-   * Ensure the ".curro/skills" directory exists under `filePath`, then write each requested skill's
+   * Ensure the ".gptloop/skills" directory exists under `filePath`, then write each requested skill's
    * files. Skills that are unknown/disabled or already present on disk are collected into
    * `failed` so the agent can continue its loop instead of hard-failing the tool call.
    */

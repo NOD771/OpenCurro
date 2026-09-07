@@ -24,7 +24,7 @@ export const openRouterProvider = new OpenRouterProvider({
   label: "OpenRouter",
   defaultBaseUrl: "https://openrouter.ai/api/v1",
   extraHeaders: {
-    "X-Title": "Curro AI",
-    "HTTP-Referer": "https://curro.ai",
+    "X-Title": "GPTLoop AI",
+    "HTTP-Referer": "https://gptloop.ai",
   },
 });
