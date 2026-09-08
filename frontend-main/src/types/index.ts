@@ -229,38 +229,6 @@ export interface AgentTeam {
 }
 
 /**
- * A user-defined Custom Role, stored in the backend SQLite database (app_state `customRoles`).
- * A Custom Role is NOT a separate agent, sub-agent, LLM instance, or execution system — it is only
- * a role/expertise/behavior overlay applied to the SAME Main Agent. When a role is active (enabled),
- * its `systemPrompt` is integrated with the Main Agent's built-in system prompt for the turn. At most
- * one role may be active at a time.
- */
-export interface CustomRole {
-  id: string;
-  /** Human-readable role name, e.g. "Medical Expert". */
-  name: string;
-  /** Short description of the role. */
-  description: string;
-  /**
-   * The role's system prompt: role, expertise, behavior, rules, communication style, and
-   * task-specific instructions ONLY. It must not define tools, tool usage, or execution logic —
-   * the Main Agent already owns those.
-   */
-  systemPrompt: string;
-  /** Whether this role is the active one applied to the Main Agent (only one active at a time). */
-  enabled: boolean;
-  createdAt: number;
-  updatedAt: number;
-}
-
-/** Custom-role definition in the backend/wire format sent with a turn when a role is active. */
-export interface BackendCustomRole {
-  name: string;
-  description: string;
-  system_prompt: string;
-}
-
-/**
  * A user-created Custom Agent, stored in the backend SQLite database (app_state `customAgents`).
  *
  * A Custom Agent is a TOP-LEVEL, independently-configured Main Agent — NOT a sub-agent, child agent,
@@ -702,11 +670,6 @@ export interface StreamRequest {
   knowledge?: KnowledgeFile[];
   /** Mirrors settings.enableReuseSubAgentSession; gates the sub-agent session tools this turn. */
   enable_reuse_sub_agent_session?: "no" | "yes";
-  /**
-   * The active Custom Role applied to the Main Agent this turn (present only when a role is
-   * selected). A role/expertise/behavior overlay — never a separate agent or model.
-   */
-  custom_role?: BackendCustomRole;
   /** When true, run this turn as a multi-agent team (with agent_team) instead of a single agent. */
   multi_agent?: boolean;
   /** The active agent team definition sent when multi_agent is true. */

@@ -19,7 +19,6 @@ export const APP_STATE_KEYS = [
   "customProviders",
   "currentSessionId",
   "agentTeams",
-  "customRoles",
   "customAgents",
   "activeCustomAgentId",
 ] as const;

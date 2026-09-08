@@ -252,8 +252,6 @@ describe("custom agent — runtime runs as an independent top-level agent", () =
     assert.equal(req.systemPromptOverride, "You are Research Agent.");
     // Only the agent's selected + valid tools (team tool stripped).
     assert.deepEqual(req.allowedToolNames, ["web_search", "file_read"]);
-    // Main-Agent-only Custom Role overlay does not apply to a Custom Agent.
-    assert.equal(req.customRole, null);
     // The turn announces which top-level Custom Agent is handling it.
     assert.ok(events.some((e) => e.event === "custom_agent_active"));
   });
