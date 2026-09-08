@@ -5,7 +5,7 @@ import type { CustomAgentManager } from "../agents/customagent/index.js";
  * Custom Agents API — read/CRUD over the persistent Custom Agent configurations (spec §8).
  *
  * The frontend primarily persists Custom Agents through the shared app-state sync (the `customAgents`
- * document), exactly like custom roles and agent teams; these endpoints expose the same data through a
+ * document), exactly like agent teams; these endpoints expose the same data through a
  * dedicated, well-typed surface (and give external callers a clean CRUD API). Every write goes through
  * the CustomAgentManager, which stores configs in the existing SQLite app_state repository.
  */

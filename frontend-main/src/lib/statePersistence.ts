@@ -33,7 +33,6 @@ const SYNC_KEYS = [
   "knowledgeSources",
   "customProviders",
   "agentTeams",
-  "customRoles",
   "customAgents",
   "activeCustomAgentId",
 ] as const;

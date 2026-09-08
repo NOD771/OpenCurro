@@ -69,9 +69,6 @@ export class CustomAgentRunner {
       ...request,
       systemPromptOverride: systemPrompt,
       allowedToolNames: resolved.allowed,
-      // A Custom Agent already carries its own fully-customized system prompt; the Main-Agent-only
-      // Custom Role overlay does not apply to it.
-      customRole: null,
       customAgent: agent,
     };
 

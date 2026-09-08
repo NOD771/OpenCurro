@@ -9,7 +9,7 @@ import type { BackendCustomAgent, CustomAgent } from "@/types";
  * selected tools) through the same core runtime as the Main Agent.
  *
  * Configs persist in the backend SQLite database via the shared app-state sync (`customAgents`),
- * exactly like custom roles and agent teams. This module owns the defensive normalization and the
+ * exactly like agent teams. This module owns the defensive normalization and the
  * wire conversion.
  */
 

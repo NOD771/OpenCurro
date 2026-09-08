@@ -33,7 +33,7 @@ export interface CustomAgentConfig {
 
 /**
  * The over-the-wire (snake_case) shape a Custom Agent config takes when sent from the frontend on a
- * chat turn, mirroring how sub-agents / custom roles / teams travel. Every field is untrusted.
+ * chat turn, mirroring how sub-agents / teams travel. Every field is untrusted.
  */
 export interface CustomAgentWire {
   id?: unknown;
