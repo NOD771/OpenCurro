@@ -12,6 +12,7 @@ import type {
   FetchProvider,
   KnowledgeFile,
   KnowledgeSource,
+  MainAgentPrompt,
   MemoryAgentLiveRun,
   MemoryAgentRunCounts,
   MemoryAgentRunMeta,
@@ -47,6 +48,7 @@ import {
 import { hasUnsafeSegment, normalizeKnowledgePath, sanitizeKnowledge } from "@/lib/defaultKnowledge";
 import { enforceSingleActive, mergeTeamsWithDefaults } from "@/lib/defaultTeams";
 import { MAIN_AGENT_ID, normalizeCustomAgents } from "@/lib/customAgents";
+import { normalizeMainAgentPrompts } from "@/lib/mainAgentPrompts";
 
 /** The workspace sections the rail switches between. */
 export type Section =
@@ -56,7 +58,8 @@ export type Section =
   | "agents"
   | "skills"
   | "teams"
-  | "customagents";
+  | "customagents"
+  | "systemprompts";
 
 /** Connection state surfaced to the user. Slow ≠ offline; only a lost connection is "offline". */
 export type Connection = "online" | "reconnecting" | "offline";
@@ -97,6 +100,10 @@ interface AppState {
   customAgents: CustomAgent[];
   /** The active agent for chat turns: a Custom Agent id, or null / "main" for the built-in Main Agent. */
   activeCustomAgentId: string | null;
+  /** User-authored custom system prompts for the built-in Main Agent. */
+  mainAgentPrompts: MainAgentPrompt[];
+  /** The active custom system prompt id for the Main Agent, or null to use the built-in prompt. */
+  activeMainAgentPromptId: string | null;
   activeRun: ActiveRun | null;
 
   // Ephemeral UI
@@ -249,6 +256,13 @@ interface AppState {
   deleteCustomAgent: (id: string) => void;
   /** Select which agent chat turns run as: a Custom Agent id, or null for the built-in Main Agent. */
   setActiveCustomAgent: (id: string | null) => void;
+
+  // Custom System Prompts for the built-in Main Agent (instructions only — not a new agent)
+  addMainAgentPrompt: (input: Omit<MainAgentPrompt, "id" | "createdAt" | "updatedAt">) => MainAgentPrompt;
+  updateMainAgentPrompt: (id: string, patch: Partial<Omit<MainAgentPrompt, "id" | "createdAt">>) => void;
+  deleteMainAgentPrompt: (id: string) => void;
+  /** Activate one custom system prompt for the Main Agent, or null to use the built-in prompt. */
+  setActiveMainAgentPrompt: (id: string | null) => void;
 
   // Multi-agent team live run (rendered inline in the assistant container message)
   startTeamRun: (
@@ -488,6 +502,8 @@ export const useStore = create<AppState>()(
       agentTeams: mergeTeamsWithDefaults([]),
       customAgents: [],
       activeCustomAgentId: null,
+      mainAgentPrompts: [],
+      activeMainAgentPromptId: null,
       activeRun: null,
 
       hydrated: false,
@@ -562,6 +578,13 @@ export const useStore = create<AppState>()(
             typeof (state as { activeCustomAgentId?: unknown }).activeCustomAgentId === "string"
               ? ((state as { activeCustomAgentId?: string }).activeCustomAgentId ?? null)
               : s.activeCustomAgentId,
+          mainAgentPrompts: normalizeMainAgentPrompts(
+            (p as { mainAgentPrompts?: unknown }).mainAgentPrompts ?? s.mainAgentPrompts,
+          ),
+          activeMainAgentPromptId:
+            typeof (state as { activeMainAgentPromptId?: unknown }).activeMainAgentPromptId === "string"
+              ? ((state as { activeMainAgentPromptId?: string }).activeMainAgentPromptId ?? null)
+              : s.activeMainAgentPromptId,
         }));
       },
 
@@ -1047,6 +1070,33 @@ export const useStore = create<AppState>()(
 
       setActiveCustomAgent: (id) =>
         set(() => ({ activeCustomAgentId: id && id !== MAIN_AGENT_ID ? id : null })),
+
+      // ---- Custom System Prompts for the built-in Main Agent ---------------------
+      // These change ONLY the instructions the existing Main Agent runs with. They never create a
+      // new agent, sub-agent, or team. Exactly one prompt can be active at a time; null falls back to
+      // the built-in Main Agent system prompt.
+      addMainAgentPrompt: (input) => {
+        const now = Date.now();
+        const prompt: MainAgentPrompt = { id: uid("mprompt"), createdAt: now, updatedAt: now, ...input };
+        set((s) => ({ mainAgentPrompts: [prompt, ...s.mainAgentPrompts] }));
+        return prompt;
+      },
+
+      updateMainAgentPrompt: (id, patch) =>
+        set((s) => ({
+          mainAgentPrompts: s.mainAgentPrompts.map((p) =>
+            p.id === id ? { ...p, ...patch, updatedAt: Date.now() } : p,
+          ),
+        })),
+
+      deleteMainAgentPrompt: (id) =>
+        set((s) => ({
+          mainAgentPrompts: s.mainAgentPrompts.filter((p) => p.id !== id),
+          // Deleting the active prompt falls back to the built-in Main Agent system prompt.
+          activeMainAgentPromptId: s.activeMainAgentPromptId === id ? null : s.activeMainAgentPromptId,
+        })),
+
+      setActiveMainAgentPrompt: (id) => set(() => ({ activeMainAgentPromptId: id || null })),
 
       // ---- Multi-agent team live run ---------------------------------------------
       startTeamRun: (convId, msgId, info) =>

@@ -21,6 +21,9 @@ export const SUB_AGENT_SESSION_ID_LENGTH = 10;
 /** Custom agents carry a 16-character alphanumeric ID. */
 export const CUSTOM_AGENT_ID_LENGTH = 16;
 
+/** Main-agent custom system prompts carry a 16-character alphanumeric ID. */
+export const MAIN_AGENT_PROMPT_ID_LENGTH = 16;
+
 /** Generate a cryptographically random ID of `length` characters from the 62-char alphabet. */
 export function randomId(length: number): string {
   const bytes = crypto.randomBytes(length);
@@ -47,6 +50,14 @@ export function createSubAgentSessionId(): string {
  */
 export function createCustomAgentId(): string {
   return randomId(CUSTOM_AGENT_ID_LENGTH);
+}
+
+/**
+ * Create a new 16-character main-agent prompt ID (all numbers + all letters). Each custom system
+ * prompt the user creates for the built-in Main Agent carries its own id.
+ */
+export function createMainAgentPromptId(): string {
+  return randomId(MAIN_AGENT_PROMPT_ID_LENGTH);
 }
 
 /** True when `value` looks like a usable session id (bounded, printable, path-safe). */
