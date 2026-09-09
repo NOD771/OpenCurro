@@ -253,6 +253,28 @@ export interface CustomAgent {
   updatedAt: number;
 }
 
+/**
+ * A user-authored custom system prompt for the built-in Main Agent, stored in the backend SQLite
+ * database (app_state `mainAgentPrompts`).
+ *
+ * This is NOT a new agent, sub-agent, or team — it only changes the INSTRUCTIONS the existing Main
+ * Agent runs with. The user can save many prompts and mark exactly one as active (see
+ * `activeMainAgentPromptId`); the active prompt is sent as `system_prompt_override` and used verbatim
+ * as the Main Agent's system prompt for future runs. When none is active, the Main Agent keeps using
+ * its built-in system prompt unchanged.
+ */
+export interface MainAgentPrompt {
+  id: string;
+  /** Human-readable prompt name (required). */
+  name: string;
+  /** Optional short description of what this prompt changes. */
+  description: string;
+  /** The full system-prompt text, used verbatim as the Main Agent's system prompt when active. */
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 /** Custom-agent definition in the backend/wire format sent with a turn when a Custom Agent is active. */
 export interface BackendCustomAgent {
   id: string;
@@ -682,6 +704,12 @@ export interface StreamRequest {
    * default Main Agent is active.
    */
   custom_agent?: BackendCustomAgent;
+  /**
+   * The active Custom System Prompt for the built-in Main Agent, used verbatim as its system prompt
+   * this turn. Sent only when a custom prompt is active AND the default Main Agent is running (never
+   * with a Custom Agent or team). Absent → the Main Agent uses its built-in system prompt.
+   */
+  system_prompt_override?: string;
 }
 
 /** SSE event payloads emitted by the gptloop agent. */

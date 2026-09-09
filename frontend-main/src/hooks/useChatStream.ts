@@ -7,6 +7,7 @@ import { attachLatestMemoryAgentRun } from "@/lib/memoryAgent";
 import { CUSTOM_PROVIDER_PREFIX, toCustomProviderConfig } from "@/lib/providers";
 import { activeTeam } from "@/lib/defaultTeams";
 import { findActiveCustomAgent, toBackendCustomAgent } from "@/lib/customAgents";
+import { findActiveMainAgentPrompt } from "@/lib/mainAgentPrompts";
 import { useStore, type ActiveRun } from "@/store/useStore";
 import { uid } from "@/utils/id";
 import type {
@@ -77,6 +78,15 @@ function buildStartRequest(convId: string, text: string): StreamRequest {
   const customAgent = findActiveCustomAgent(store.customAgents, store.activeCustomAgentId);
   const backendCustomAgent = customAgent ? toBackendCustomAgent(customAgent) : undefined;
 
+  // Custom System Prompt for the built-in Main Agent: when a prompt is active AND the default Main
+  // Agent is running (no Custom Agent), send its text so the Main Agent uses it verbatim as its
+  // system prompt. This only changes the Main Agent's instructions — it never creates a new agent.
+  const activeMainPrompt = findActiveMainAgentPrompt(store.mainAgentPrompts, store.activeMainAgentPromptId);
+  const systemPromptOverride =
+    !backendCustomAgent && activeMainPrompt && activeMainPrompt.content.trim().length > 0
+      ? activeMainPrompt.content
+      : undefined;
+
   // Multi-agent team mode: when enabled and a team is active, route the turn through the team head.
   // Disabled while a Custom Agent is active.
   const teamsEnabled = settings.enableAgentTeams === "yes" && !backendCustomAgent;
@@ -126,6 +136,7 @@ function buildStartRequest(convId: string, text: string): StreamRequest {
     agent_team: backendTeam,
     enable_send_message_to_team: settings.enableSendMessageToTeam === "yes" ? "yes" : "no",
     custom_agent: backendCustomAgent,
+    system_prompt_override: systemPromptOverride,
   };
 }
 

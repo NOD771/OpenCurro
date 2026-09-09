@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -49,12 +50,16 @@ export function Modal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  // Rendered through a portal into document.body so the dialog is ALWAYS positioned relative to the
+  // viewport — never relative to a transformed ancestor (e.g. a panel running the `panel-in`
+  // animation), which would otherwise turn this fixed overlay into a containing-block-relative box and
+  // push part of the dialog under the top header. The portal keeps every popup centered on screen.
+  return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-[80] flex justify-center overlay-in",
+        "fixed inset-0 z-[80] flex justify-center overflow-y-auto overlay-in",
         align === "center" ? "items-center p-4" : "items-start p-4 pt-[8vh]",
       )}
       style={{ background: "rgba(28,28,25,0.28)", backdropFilter: "blur(3px)" }}
@@ -99,6 +104,7 @@ export function Modal({
           </footer>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

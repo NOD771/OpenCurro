@@ -21,6 +21,7 @@ import {
   normalizeCustomAgentConfig,
   type CustomAgentConfig,
 } from "../agents/customagent/index.js";
+import type { MainAgentPromptManager } from "../agents/mainagentprompt/index.js";
 
 /** Extract a string field from an untrusted object (used on the custom_provider payload). */
 function str(value: unknown): string {
@@ -91,6 +92,13 @@ interface StreamBody {
    * CustomAgentManager, so a Custom Agent can be started independently of the Main Agent.
    */
   custom_agent_id?: unknown;
+  /**
+   * A custom system prompt to use VERBATIM for the built-in Main Agent this turn (the active "Custom
+   * System Prompt"). Only applies to the default Main Agent path — Custom Agents supply their own
+   * prompt and teams route to the team head. When omitted, the backend resolves the active Main Agent
+   * prompt from the MainAgentPromptManager; when neither yields text, the built-in prompt is used.
+   */
+  system_prompt_override?: unknown;
 }
 
 /**
@@ -222,8 +230,22 @@ export function buildChatRouter(
   multiAgent: MultiAgentRunner,
   customAgents: CustomAgentManager,
   customAgentRunner: CustomAgentRunner,
+  mainAgentPrompts: MainAgentPromptManager,
 ): Router {
   const router = Router();
+
+  /**
+   * Resolve the system prompt the built-in Main Agent should run with this turn. Prefers an explicit
+   * override sent by the client (the active Custom System Prompt), else falls back to the active
+   * prompt stored server-side (the backend is the source of truth). Returns null to mean "use the
+   * built-in Main Agent system prompt" — never creating a new agent, only changing its instructions.
+   */
+  const resolveMainAgentSystemPrompt = (body: StreamBody): string | null => {
+    const fromBody =
+      typeof body.system_prompt_override === "string" ? body.system_prompt_override.trim() : "";
+    if (fromBody.length > 0) return body.system_prompt_override as string;
+    return mainAgentPrompts.getActivePromptText();
+  };
 
   /**
    * Persist the turn's outcome: transcript + session bookkeeping (batched, off hot path).
@@ -441,6 +463,10 @@ export function buildChatRouter(
         enableReuseSubAgentSession:
           body.enable_reuse_sub_agent_session === true ||
           body.enable_reuse_sub_agent_session === "yes",
+        // Active Custom System Prompt for the built-in Main Agent (null → use the built-in prompt).
+        // Custom Agents override this below with their own prompt, so it only affects the default
+        // Main Agent path and never changes the Main Agent architecture.
+        systemPromptOverride: resolveMainAgentSystemPrompt(body),
       };
 
       // Custom Agent mode: when the active agent is a user-created top-level Custom Agent, run this

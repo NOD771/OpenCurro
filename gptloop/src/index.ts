@@ -16,9 +16,11 @@ import { buildToolsRouter } from "./api/tools.js";
 import { buildMemoryAgentRouter } from "./api/memoryagent.js";
 import { buildSystemPromptRouter } from "./api/systemprompt.js";
 import { buildCustomAgentsRouter } from "./api/customagents.js";
+import { buildMainAgentPromptsRouter } from "./api/mainagentprompts.js";
 import { MemoryAgentService } from "./agents/memoryagent/index.js";
 import { MultiAgentRunner } from "./agents/multiagent/index.js";
 import { CustomAgentManager, CustomAgentRunner } from "./agents/customagent/index.js";
+import { MainAgentPromptManager } from "./agents/mainagentprompt/index.js";
 import { GptLoopDatabase } from "./database/index.js";
 
 function main(): void {
@@ -44,6 +46,11 @@ function main(): void {
   // runtime as the Main Agent (parameterized with each agent's system prompt + selected tools).
   const customAgents = new CustomAgentManager(db.appState);
   const customAgentRunner = new CustomAgentRunner(agent, tools, config);
+  // Custom System Prompts for the built-in Main Agent: the manager persists named prompts + the
+  // active selection in the SQLite app_state repository and is the source of truth for which prompt
+  // the Main Agent runs with. It never creates a new agent — it only changes the Main Agent's system
+  // prompt (see chat.ts, which applies the active prompt as a systemPromptOverride).
+  const mainAgentPrompts = new MainAgentPromptManager(db.appState);
 
   const app = express();
   app.use(
@@ -71,6 +78,7 @@ function main(): void {
   app.use("/api/tools", buildToolsRouter(tools));
   app.use("/api/system-prompt", buildSystemPromptRouter(config));
   app.use("/api/custom-agents", buildCustomAgentsRouter(customAgents));
+  app.use("/api/main-agent-prompts", buildMainAgentPromptsRouter(mainAgentPrompts, config));
   app.use(
     "/api/chat",
     buildChatRouter(
@@ -83,6 +91,7 @@ function main(): void {
       multiAgent,
       customAgents,
       customAgentRunner,
+      mainAgentPrompts,
     ),
   );
   app.use("/api/files", buildFilesRouter(config));
