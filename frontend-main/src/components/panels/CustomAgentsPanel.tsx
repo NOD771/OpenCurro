@@ -6,6 +6,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Sparkles,
   Trash2,
@@ -121,6 +122,20 @@ export function CustomAgentsPanel() {
   const refreshTools = () => {
     setToolsLoading(true);
     void loadTools(undefined, false);
+  };
+
+  /**
+   * Re-fetch the Main Agent's system prompt and load it into the draft (overwrites the field). Unlike
+   * the one-time pre-fill on open, this lets the user re-pull the latest prompt as many times as they
+   * want while creating a Custom Agent. Only available while creating a NEW agent.
+   */
+  const reloadPrompt = () => {
+    setPromptLoading(true);
+    setPromptError(null);
+    fetchMainAgentSystemPrompt()
+      .then((prompt) => setDraft((d) => (d ? { ...d, systemPrompt: prompt } : d)))
+      .catch(() => setPromptError("Couldn't reload the Main Agent's system prompt."))
+      .finally(() => setPromptLoading(false));
   };
 
   const save = () => {
@@ -358,6 +373,20 @@ export function CustomAgentsPanel() {
               }
               hint="no limit"
             >
+              {draft.id === null && (
+                <div className="mb-1.5 flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={reloadPrompt}
+                    disabled={promptLoading}
+                    className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--border)] px-2 py-1 text-[10px] text-[var(--muted)] hover:border-[var(--secondary)] disabled:opacity-50"
+                    title="Reload the Main Agent's system prompt into the editor"
+                  >
+                    <RotateCcw className={cn("h-3 w-3", promptLoading && "animate-spin")} />
+                    Reload prompt
+                  </button>
+                </div>
+              )}
               <TextArea
                 rows={10}
                 value={draft.systemPrompt}
