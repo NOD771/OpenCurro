@@ -68,4 +68,6 @@ export const FALLBACK_PROVIDERS: ProviderMeta[] = [
   { id: "sarvam", label: "Sarvam AI", defaultBaseUrl: "https://api.sarvam.ai/v1" },
   { id: "sealion", label: "SEA-LION", defaultBaseUrl: "https://api.sea-lion.ai/v1" },
   { id: "openadapter", label: "OpenAdapter", defaultBaseUrl: "https://api.openadapter.in/v1" },
+  { id: "xkiro", label: "xKiro AI", defaultBaseUrl: "https://api.xkiro.com/v1" },
+  { id: "agentrouter", label: "AgentRouter", defaultBaseUrl: "https://agentrouter.org/v1" },
 ];

@@ -30,6 +30,8 @@ import { opentyphoonProvider } from "./opentyphoon.js";
 import { sarvamProvider } from "./sarvam.js";
 import { sealionProvider } from "./sealion.js";
 import { openadapterProvider } from "./openadapter.js";
+import { xkiroProvider } from "./xkiro.js";
+import { agentrouterProvider } from "./agentrouter.js";
 
 /**
  * ProviderRegistry maps a provider id to a Provider implementation.
@@ -98,6 +100,8 @@ export const ALL_PROVIDERS: Provider[] = [
   sarvamProvider,
   sealionProvider,
   openadapterProvider,
+  xkiroProvider,
+  agentrouterProvider,
 ];
 
 export function createProviderRegistry(): ProviderRegistry {
