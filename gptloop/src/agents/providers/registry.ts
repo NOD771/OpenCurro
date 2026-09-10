@@ -31,6 +31,7 @@ import { sarvamProvider } from "./sarvam.js";
 import { sealionProvider } from "./sealion.js";
 import { openadapterProvider } from "./openadapter.js";
 import { xkiroProvider } from "./xkiro.js";
+import { apinexProvider } from "./apinex.js";
 
 /**
  * ProviderRegistry maps a provider id to a Provider implementation.
@@ -100,6 +101,7 @@ export const ALL_PROVIDERS: Provider[] = [
   sealionProvider,
   openadapterProvider,
   xkiroProvider,
+  apinexProvider,
 ];
 
 export function createProviderRegistry(): ProviderRegistry {
