@@ -70,4 +70,5 @@ export const FALLBACK_PROVIDERS: ProviderMeta[] = [
   { id: "openadapter", label: "OpenAdapter", defaultBaseUrl: "https://api.openadapter.in/v1" },
   { id: "xkiro", label: "xKiro AI", defaultBaseUrl: "https://api.xkiro.com/v1" },
   { id: "apinex", label: "APInex", defaultBaseUrl: "https://api.apinex.bond/v1" },
+  { id: "cline", label: "Cline", defaultBaseUrl: "https://api.cline.bot/api/v1" },
 ];
