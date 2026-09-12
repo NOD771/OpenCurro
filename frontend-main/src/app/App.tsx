@@ -9,6 +9,7 @@ import { KnowledgePanel } from "@/components/panels/KnowledgePanel";
 import { AgentsPanel } from "@/components/panels/AgentsPanel";
 import { SkillsPanel } from "@/components/panels/SkillsPanel";
 import { TeamsPanel } from "@/components/panels/TeamsPanel";
+import { CeoPanel } from "@/components/panels/CeoPanel";
 import { CustomAgentsPanel } from "@/components/panels/CustomAgentsPanel";
 import { MainAgentPromptsPanel } from "@/components/panels/MainAgentPromptsPanel";
 import { SettingsModal } from "@/components/editors/SettingsModal";
@@ -96,6 +97,7 @@ export function App() {
               {section === "agents" && <AgentsPanel />}
               {section === "skills" && <SkillsPanel />}
               {section === "teams" && <TeamsPanel />}
+              {section === "ceo" && <CeoPanel />}
               {section === "customagents" && <CustomAgentsPanel />}
               {section === "systemprompts" && <MainAgentPromptsPanel />}
             </div>

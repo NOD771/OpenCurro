@@ -28,8 +28,14 @@ function environmentBlock(workspaceRoot: string): string {
 - You share the team's memory and knowledge base with your teammates; coordinate through the team tools, not by guessing what others are doing.`;
 }
 
-/** Guidance on the collaboration tools, tailored to whether send_message_to_team is enabled. */
-function collaborationToolsBlock(isLeader: boolean, sendMessageEnabled: boolean): string {
+/** Guidance on the collaboration tools, tailored to whether send_message_to_team is enabled. When a
+ * `ceoName` is provided, the team is operating under a CEO agent and the leader additionally sees the
+ * report_task_completion_to_ceo tool. */
+function collaborationToolsBlock(
+  isLeader: boolean,
+  sendMessageEnabled: boolean,
+  ceoName?: string,
+): string {
   const lines: string[] = ["# Team collaboration tools (native function calls)"];
   lines.push(
     "- list_agent_team_members(): List everyone on the team with their role and description. Use it to pick the right specialist.",
@@ -39,6 +45,11 @@ function collaborationToolsBlock(isLeader: boolean, sendMessageEnabled: boolean)
       "- delegate_task_or_send_message(messages[]): Assign tasks to — or message — one or more members at once. Each message must be self-contained: objective, context, requirements, constraints, and the expected result. Independent tasks can be delegated to multiple members simultaneously for parallel work; do NOT delegate dependent tasks together unless the prerequisite results are already available. After you delegate, this tool returns immediately and the members work on their own — you do not block on them.",
       "- get_team_members_status(agent_ids[]): Check whether specific members are idle, working, queued, completed, or failed, and how many messages are waiting for them. Use it to monitor delegated work and decide what to do next.",
     );
+    if (ceoName) {
+      lines.push(
+        `- report_task_completion_to_ceo(summary): Report to the CEO ("${ceoName}") that the task the CEO assigned you is COMPLETE. Provide a concise summary of what your team accomplished and the concrete result (files, outcomes, key findings). Call this ONLY once your members have finished and you have reviewed their work.`,
+      );
+    }
   } else {
     lines.push(
       "- message_team_leader(my_name, message): Report to the head/leader. Use it to say your delegated task is COMPLETE (include the concrete results, file paths, and conclusions), to report progress, to ask a question, or to request clarification. Always pass your own name.",
@@ -60,28 +71,45 @@ export function buildHeadSystemPrompt(
   team: AgentTeamDefinition,
   workspaceRoot: string,
   sendMessageEnabled: boolean,
+  options?: { ceo?: { name: string } },
 ): string {
   const base = (team.leader_system_prompt ?? "").trim();
+  const ceoName = options?.ceo?.name;
+
+  // In CEO mode the leader receives tasks from the CEO (not directly from the user) and reports
+  // completion back up to the CEO instead of answering the user itself.
+  const roleAndFlow = ceoName
+    ? `- You are "${team.leader_name}", the HEAD / team leader of the multi-agent team "${team.name}". You coordinate real, independent teammates — they are NOT sub-agents; each is a full agent with its own tools and its own persistent context.
+- You operate UNDER a CEO agent ("${ceoName}"). The CEO assigns tasks to you; you break each task into sub-tasks, delegate them to the most suitable members, review their results, iterate if something is wrong, and — once the whole task is done — report completion back to the CEO with report_task_completion_to_ceo (never address the user directly; the CEO owns the conversation with the user).
+- You may also do work yourself with your own tools when that is faster than delegating.`
+    : `- You are "${team.leader_name}", the HEAD / team leader of a multi-agent collaboration team. You coordinate real, independent teammates — they are NOT sub-agents; each is a full agent with its own tools and its own persistent context.
+- The user talks ONLY to you. Your job: understand the user's goal, break it into tasks, delegate each task to the most suitable member, review their results, iterate if something is wrong, and give the user a clear final answer when the whole goal is done.
+- You may also do work yourself with your own tools when that is faster than delegating.`;
+
+  const howToLeadTail = ceoName
+    ? `- When a member reports completion, review it. If it is wrong or incomplete, delegate follow-up work. When everything the CEO asked for is done, call report_task_completion_to_ceo with a concise summary of what your team produced (files, outcomes, where to find things).
+- Use get_team_members_status to monitor progress when helpful. Assign independent tasks in parallel; sequence dependent tasks.
+- Keep your natural-language messages concise; let the team and the tools do the work.`
+    : `- When a member reports completion, review it. If it is wrong or incomplete, delegate follow-up work. If everything the user asked for is done, respond to the user with a clear, complete final summary of what the team produced (files, outcomes, where to find things).
+- Use get_team_members_status to monitor progress when helpful. Assign independent tasks in parallel; sequence dependent tasks.
+- Keep your natural-language messages concise; let the team and the tools do the work.`;
+
   return `${base}
 
 # Your role
-- You are "${team.leader_name}", the HEAD / team leader of a multi-agent collaboration team. You coordinate real, independent teammates — they are NOT sub-agents; each is a full agent with its own tools and its own persistent context.
-- The user talks ONLY to you. Your job: understand the user's goal, break it into tasks, delegate each task to the most suitable member, review their results, iterate if something is wrong, and give the user a clear final answer when the whole goal is done.
-- You may also do work yourself with your own tools when that is faster than delegating.
+${roleAndFlow}
 
 # The team
 ${rosterBlock(team)}
 
 ${environmentBlock(workspaceRoot)}
 
-${collaborationToolsBlock(true, sendMessageEnabled)}
+${collaborationToolsBlock(true, sendMessageEnabled, ceoName)}
 
 # How to lead
-- When the user asks for something, decide which members are needed and delegate with delegate_task_or_send_message. Give each member everything they need to work independently.
+- When you receive a task, decide which members are needed and delegate with delegate_task_or_send_message. Give each member everything they need to work independently.
 - Delegating does NOT block you: members run on their own and report back with message_team_leader. It is perfectly fine to finish your turn after delegating — the members keep working and you will be re-activated automatically when a member reports back, so you can review their work.
-- When a member reports completion, review it. If it is wrong or incomplete, delegate follow-up work. If everything the user asked for is done, respond to the user with a clear, complete final summary of what the team produced (files, outcomes, where to find things).
-- Use get_team_members_status to monitor progress when helpful. Assign independent tasks in parallel; sequence dependent tasks.
-- Keep your natural-language messages concise; let the team and the tools do the work.`.trim();
+${howToLeadTail}`.trim();
 }
 
 /** Build a member's system prompt. Members execute delegated tasks and report back to the leader. */

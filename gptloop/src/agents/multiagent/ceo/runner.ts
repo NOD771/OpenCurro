@@ -3,23 +3,24 @@ import type { ToolRegistry, OpenAIToolSchema } from "../../tools/registry.js";
 import type { StoredMessage } from "../../../services/sessionStore.js";
 import type { ToolContext } from "../../tools/types.js";
 import { runTeamAgentLoop } from "../agentLoop.js";
-import { buildHeadSystemPrompt } from "../systemprompt.js";
+import { buildCeoSystemPrompt } from "./systemprompt.js";
 import type { AgentTeamDefinition, TeamAgentRunResult } from "../types.js";
+import type { CeoAgentDefinition } from "./types.js";
 
 /**
- * The HEAD (team leader) agent runtime. The head owns the conversation with the user: it plans,
- * delegates tasks to members, reviews their reports, and delivers the final result. It is a real
- * agent with the full tool surface plus the leader-only collaboration tools. This wrapper builds the
- * head's system prompt and runs one streaming agentic loop; the orchestrator drives when it runs.
+ * The CEO agent runtime. The CEO owns the conversation with the user: it plans at the organizational
+ * level, assigns tasks to the teams' head/leaders, reviews their completion reports, and delivers the
+ * final result. It is a real agent with the full tool surface plus the CEO-only tools
+ * (assign_tasks_to_teams, list_teams). This wrapper builds the CEO's system prompt and runs one
+ * streaming agentic loop; the CEO orchestrator drives when it runs. Reuses the exact same agent loop
+ * (runTeamAgentLoop) as the head/member agents — the CEO layer is built ON the same multi-agent
+ * runtime, not a fork of it.
  */
-export interface RunHeadAgentArgs {
-  team: AgentTeamDefinition;
+export interface RunCeoAgentArgs {
+  ceo: CeoAgentDefinition;
+  teams: AgentTeamDefinition[];
   workspaceRoot: string;
-  sendMessageEnabled: boolean;
-  /** When present, this team operates UNDER a CEO agent — the leader receives tasks from the CEO and
-   * reports completion back to it. Omitted in the normal (non-CEO) team mode. */
-  ceo?: { name: string };
-  /** The head's conversation (mutated in place across runs and turns). */
+  /** The CEO's conversation (mutated in place across runs and turns). */
   messages: StoredMessage[];
   allowedTools: Set<string>;
   toolSchemas: OpenAIToolSchema[];
@@ -35,13 +36,8 @@ export interface RunHeadAgentArgs {
   effort?: string;
 }
 
-export async function runHeadAgent(args: RunHeadAgentArgs): Promise<TeamAgentRunResult> {
-  const systemPrompt = buildHeadSystemPrompt(
-    args.team,
-    args.workspaceRoot,
-    args.sendMessageEnabled,
-    args.ceo ? { ceo: args.ceo } : undefined,
-  );
+export async function runCeoAgent(args: RunCeoAgentArgs): Promise<TeamAgentRunResult> {
+  const systemPrompt = buildCeoSystemPrompt(args.ceo, args.teams, args.workspaceRoot);
   return runTeamAgentLoop({
     provider: args.provider,
     tools: args.tools,

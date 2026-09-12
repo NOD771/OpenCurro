@@ -5,7 +5,7 @@ import { applySchema } from "../../database/schema.js";
 import { AppStateRepo } from "../../database/repositories/appStateRepo.js";
 import { createToolRegistry } from "../tools/index.js";
 import { buildSystemPrompt } from "../systemprompt.js";
-import { TEAM_TOOL_NAMES } from "../tools/teamTools.js";
+import { TEAM_TOOL_NAMES, ALL_MULTI_AGENT_TOOL_NAMES } from "../tools/teamTools.js";
 import type { ChatSession } from "../../services/sessionStore.js";
 import type { SessionEventBuffer } from "../../services/eventBuffer.js";
 import type { AppConfig } from "../../config.js";
@@ -63,7 +63,10 @@ describe("custom agent — configuration & normalization", () => {
     ]);
     assert.deepEqual(cleaned, ["file_read", "web_search"]);
     for (const team of TEAM_TOOL_NAMES) assert.ok(isCustomAgentExcludedTool(team));
-    assert.deepEqual([...CUSTOM_AGENT_EXCLUDED_TOOLS].sort(), [...TEAM_TOOL_NAMES].sort());
+    assert.deepEqual(
+      [...CUSTOM_AGENT_EXCLUDED_TOOLS].sort(),
+      [...ALL_MULTI_AGENT_TOOL_NAMES].sort(),
+    );
   });
 });
 

@@ -33,6 +33,7 @@ const SYNC_KEYS = [
   "knowledgeSources",
   "customProviders",
   "agentTeams",
+  "ceoAgents",
   "customAgents",
   "activeCustomAgentId",
   "mainAgentPrompts",

@@ -45,6 +45,10 @@ export const SUB_AGENT_RESTRICTED_TOOLS: readonly string[] = [
   "send_message_to_team",
   "list_agent_team_members",
   "message_team_leader",
+  // CEO multi-agent tools — only for the CEO / team leaders inside a CEO system, never sub-agents.
+  "assign_tasks_to_teams",
+  "list_teams",
+  "report_task_completion_to_ceo",
 ];
 
 /** Fast membership test for the restricted set. */

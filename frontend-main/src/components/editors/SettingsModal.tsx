@@ -362,6 +362,26 @@ export function SettingsModal() {
             </p>
           </section>
 
+          {/* CEO multi-agent system */}
+          <section className="space-y-3 border-t border-[var(--border)] pt-5">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--subtle)]">CEO agent (multi-team)</h3>
+            <Field label="Enable CEO agent">
+              <Select
+                value={settings.enableCeoAgents ?? "no"}
+                onChange={(e) => setSettings({ enableCeoAgents: e.target.value === "yes" ? "yes" : "no" })}
+              >
+                <option value="no">No (default)</option>
+                <option value="yes">Yes — use the active CEO agent</option>
+              </Select>
+            </Field>
+            <p className="text-xs text-[var(--muted)]">
+              When enabled, your chat goes to the active CEO agent, who controls the head/leaders of
+              the teams it manages — assigning them tasks, and the leaders then coordinate their own
+              members. Create and activate a CEO from the “CEO agents” page in the sidebar. Takes
+              precedence over a single agent team when both are active.
+            </p>
+          </section>
+
           {/* Custom providers */}
           <section className="space-y-3 border-t border-[var(--border)] pt-5">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--subtle)]">Custom providers</h3>

@@ -19,6 +19,7 @@ import { buildCustomAgentsRouter } from "./api/customagents.js";
 import { buildMainAgentPromptsRouter } from "./api/mainagentprompts.js";
 import { MemoryAgentService } from "./agents/memoryagent/index.js";
 import { MultiAgentRunner } from "./agents/multiagent/index.js";
+import { CeoAgentRunner } from "./agents/multiagent/ceo/index.js";
 import { CustomAgentManager, CustomAgentRunner } from "./agents/customagent/index.js";
 import { MainAgentPromptManager } from "./agents/mainagentprompt/index.js";
 import { GptLoopDatabase } from "./database/index.js";
@@ -41,6 +42,9 @@ function main(): void {
   // The multi-agent team runner: drives a whole agent team (head + members) for one chat turn,
   // streaming onto the same event buffer the single agent uses.
   const multiAgent = new MultiAgentRunner(providers, tools, config);
+  // The CEO multi-agent runner: drives a CEO agent that controls the head/leaders of several agent
+  // teams, streaming onto the same event buffer. Built on the same multi-agent runtime as the team runner.
+  const ceoAgent = new CeoAgentRunner(providers, tools, config);
   // Custom Agents: user-created, independently-configured TOP-LEVEL Main Agents. The manager persists
   // their configs in the SQLite app_state repository; the runner executes them through the SAME core
   // runtime as the Main Agent (parameterized with each agent's system prompt + selected tools).
@@ -89,6 +93,7 @@ function main(): void {
       askQuestions,
       db,
       multiAgent,
+      ceoAgent,
       customAgents,
       customAgentRunner,
       mainAgentPrompts,

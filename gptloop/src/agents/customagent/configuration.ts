@@ -1,4 +1,4 @@
-import { TEAM_TOOL_NAMES } from "../tools/teamTools.js";
+import { ALL_MULTI_AGENT_TOOL_NAMES } from "../tools/teamTools.js";
 
 /**
  * A Custom Agent is a user-created, independently-configured TOP-LEVEL Main Agent — NOT a sub-agent,
@@ -55,7 +55,7 @@ export interface CustomAgentWire {
  * — matching the Main Agent, which also hides these. Everything else the Main Agent can use (files,
  * shell, web, memory, knowledge, skills, sub-agents, todos, plan/ask, ...) is selectable.
  */
-export const CUSTOM_AGENT_EXCLUDED_TOOLS: readonly string[] = [...TEAM_TOOL_NAMES];
+export const CUSTOM_AGENT_EXCLUDED_TOOLS: readonly string[] = [...ALL_MULTI_AGENT_TOOL_NAMES];
 
 const EXCLUDED = new Set<string>(CUSTOM_AGENT_EXCLUDED_TOOLS);
 

@@ -15,6 +15,8 @@ import type { GptLoopDatabase } from "../database/index.js";
 import { createCustomAgentId } from "../database/index.js";
 import type { MultiAgentRunner } from "../agents/multiagent/index.js";
 import type { AgentTeamDefinition, TeamMemberDefinition, RunTeamRequest } from "../agents/multiagent/index.js";
+import type { CeoAgentRunner } from "../agents/multiagent/ceo/index.js";
+import type { CeoAgentDefinition, RunCeoRequest } from "../agents/multiagent/ceo/index.js";
 import {
   CustomAgentRunner,
   CustomAgentManager,
@@ -81,6 +83,11 @@ interface StreamBody {
   agent_team?: unknown;
   /** Mirrors settings; gates the sensitive send_message_to_team tool for the team this turn. */
   enable_send_message_to_team?: unknown;
+  /** When true (with a valid ceo_agent), run this turn as a CEO multi-agent system. Takes precedence
+   * over ordinary team mode: the FIRST user prompt goes to the CEO agent, which controls the teams. */
+  ceo_mode?: unknown;
+  /** The active CEO agent definition (CEO + controlled teams) sent from the frontend. */
+  ceo_agent?: unknown;
   /**
    * The active Custom Agent config (a top-level, user-created Main Agent) for this turn. When present
    * and valid, the turn runs as that independent agent — its own system prompt + selected tools —
@@ -150,6 +157,40 @@ function normalizeTeam(raw: unknown): AgentTeamDefinition | null {
     leader_system_prompt:
       typeof record.leader_system_prompt === "string" ? record.leader_system_prompt : "",
     members,
+  };
+}
+
+/**
+ * Defensively coerce the client-provided CEO-agent definition into a safe, well-typed value. A CEO is
+ * a name + description + system prompt plus the set of teams it controls (each normalized exactly like
+ * an ordinary agent team). Returns null when the CEO has no name or controls no valid teams.
+ */
+function normalizeCeo(raw: unknown): CeoAgentDefinition | null {
+  if (!raw || typeof raw !== "object") return null;
+  const record = raw as Record<string, unknown>;
+  const name = typeof record.name === "string" ? record.name.trim() : "";
+  if (!name) return null;
+
+  const rawTeams = Array.isArray(record.teams) ? record.teams : [];
+  const teams: AgentTeamDefinition[] = [];
+  const seenTeamIds = new Set<string>();
+  for (const item of rawTeams) {
+    const team = normalizeTeam(item);
+    if (!team) continue;
+    // De-duplicate by team id so two identical selections cannot create colliding actors.
+    const key = team.id.toLowerCase();
+    if (seenTeamIds.has(key)) continue;
+    seenTeamIds.add(key);
+    teams.push(team);
+  }
+  if (teams.length === 0) return null;
+
+  return {
+    id: typeof record.id === "string" && record.id.trim().length > 0 ? record.id.trim() : "ceo",
+    name,
+    description: typeof record.description === "string" ? record.description : "",
+    system_prompt: typeof record.system_prompt === "string" ? record.system_prompt : "",
+    teams,
   };
 }
 
@@ -228,6 +269,7 @@ export function buildChatRouter(
   askQuestions: QuestionStore,
   db: GptLoopDatabase,
   multiAgent: MultiAgentRunner,
+  ceoAgent: CeoAgentRunner,
   customAgents: CustomAgentManager,
   customAgentRunner: CustomAgentRunner,
   mainAgentPrompts: MainAgentPromptManager,
@@ -388,6 +430,56 @@ export function buildChatRouter(
       session.eventBuffer = buffer;
       session.abortController = abortController;
       session.running = true;
+
+      // CEO multi-agent mode: when the frontend has an active CEO enabled, route the FIRST user input
+      // to the CEO agent, which controls the head/leaders of its teams. Takes precedence over ordinary
+      // team mode. The CEO runner streams onto the very same buffer, so resume/replay/persistence all
+      // work identically.
+      const ceo = body.ceo_mode === true ? normalizeCeo(body.ceo_agent) : null;
+      if (ceo) {
+        const ceoRequest: RunCeoRequest = {
+          chatId,
+          userMessage: body.user_message!,
+          ceo,
+          sendMessageToTeamEnabled:
+            body.enable_send_message_to_team === true || body.enable_send_message_to_team === "yes",
+          provider: body.provider!,
+          model: body.model!,
+          apiKey: effectiveApiKey(body),
+          baseUrl: body.base_url,
+          customProvider: body.custom_provider,
+          temperature: sanitizeTemperature(body.temperature),
+          effort: normalizeEffort(body.effort),
+          tavilyApiKey: body.tavily_api_key,
+          exaApiKey: body.exa_api_key,
+          serpapiApiKey: body.serpapi_api_key,
+          searchProvider: body.search_provider,
+          fetchProvider: body.fetch_provider,
+          firecrawlApiKey: body.firecrawl_api_key,
+          subAgents: normalizeSubAgents(body.sub_agents),
+          skills: normalizeSkills(body.skills),
+          todos: normalizeTodos(body.todos),
+          memory: normalizeMemoryFiles(body.memory),
+          knowledge: normalizeKnowledgeFiles(body.knowledge),
+        };
+
+        void ceoAgent
+          .run(ceoRequest, session, buffer, abortController.signal)
+          .catch((error) => {
+            buffer.append("error", {
+              code: "ceo_crashed",
+              message: error instanceof Error ? error.message : String(error),
+            });
+            buffer.setDone();
+            session.running = false;
+          })
+          .finally(() => {
+            settleTurn(chatId, session, buffer);
+          });
+
+        await streamFromBuffer(res, buffer, body.since_event_id ?? -1);
+        return;
+      }
 
       // Multi-agent team mode: when the frontend has an active team enabled, route the FIRST user
       // input to the team head/leader instead of the single agent. The team runner streams onto the

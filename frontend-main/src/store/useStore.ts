@@ -7,6 +7,7 @@ import type {
   BrowserPreview,
   ChatMessage,
   Conversation,
+  CeoAgent,
   CustomAgent,
   CustomProvider,
   FetchProvider,
@@ -47,6 +48,7 @@ import {
 } from "@/lib/defaultMemory";
 import { hasUnsafeSegment, normalizeKnowledgePath, sanitizeKnowledge } from "@/lib/defaultKnowledge";
 import { enforceSingleActive, mergeTeamsWithDefaults } from "@/lib/defaultTeams";
+import { enforceSingleActiveCeo, normalizeCeoAgents } from "@/lib/defaultCeo";
 import { MAIN_AGENT_ID, normalizeCustomAgents } from "@/lib/customAgents";
 import { normalizeMainAgentPrompts } from "@/lib/mainAgentPrompts";
 
@@ -58,6 +60,7 @@ export type Section =
   | "agents"
   | "skills"
   | "teams"
+  | "ceo"
   | "customagents"
   | "systemprompts";
 
@@ -96,6 +99,8 @@ interface AppState {
   knowledgeSources: Record<string, KnowledgeSource>;
   customProviders: CustomProvider[];
   agentTeams: AgentTeam[];
+  /** User-created CEO agents (top-level multi-team coordinators). */
+  ceoAgents: CeoAgent[];
   /** User-created top-level Custom Agents (independent Main Agents). */
   customAgents: CustomAgent[];
   /** The active agent for chat turns: a Custom Agent id, or null / "main" for the built-in Main Agent. */
@@ -250,6 +255,13 @@ interface AppState {
   /** Activate a team (turns off any other active team — only one team is active at a time). */
   setActiveTeam: (id: string, enabled: boolean) => void;
 
+  // CEO agent management (top-level multi-team coordinators)
+  addCeo: (ceo: CeoAgent) => void;
+  updateCeo: (id: string, patch: Partial<Omit<CeoAgent, "id" | "createdAt">>) => void;
+  deleteCeo: (id: string) => void;
+  /** Activate a CEO (turns off any other active CEO — only one CEO is active at a time). */
+  setActiveCeo: (id: string, enabled: boolean) => void;
+
   // Custom agent management (top-level, user-created Main Agents)
   addCustomAgent: (input: Omit<CustomAgent, "id" | "createdAt" | "updatedAt">) => CustomAgent;
   updateCustomAgent: (id: string, patch: Partial<Omit<CustomAgent, "id" | "createdAt">>) => void;
@@ -374,6 +386,7 @@ const defaultSettings: Settings = {
   temperature: 0.6,
   enableAgentTeams: "no",
   enableSendMessageToTeam: "no",
+  enableCeoAgents: "no",
 };
 
 function touch(conv: Conversation): Conversation {
@@ -500,6 +513,7 @@ export const useStore = create<AppState>()(
       knowledgeSources: {},
       customProviders: [],
       agentTeams: mergeTeamsWithDefaults([]),
+      ceoAgents: [],
       customAgents: [],
       activeCustomAgentId: null,
       mainAgentPrompts: [],
@@ -570,6 +584,9 @@ export const useStore = create<AppState>()(
             Array.isArray((p as { agentTeams?: unknown }).agentTeams)
               ? ((p as { agentTeams?: AgentTeam[] }).agentTeams as AgentTeam[])
               : s.agentTeams,
+          ),
+          ceoAgents: normalizeCeoAgents(
+            (p as { ceoAgents?: unknown }).ceoAgents ?? s.ceoAgents,
           ),
           customAgents: normalizeCustomAgents(
             (p as { customAgents?: unknown }).customAgents ?? s.customAgents,
@@ -1043,6 +1060,32 @@ export const useStore = create<AppState>()(
               : enabled
                 ? { ...t, enabled: false } // only one team active at a time
                 : t,
+          ),
+        })),
+
+      // ---- CEO agent management (top-level multi-team coordinators) --------------
+      addCeo: (ceo) =>
+        set((s) => ({
+          ceoAgents: enforceSingleActiveCeo([{ ...ceo, updatedAt: Date.now() }, ...s.ceoAgents]),
+        })),
+
+      updateCeo: (id, patch) =>
+        set((s) => ({
+          ceoAgents: enforceSingleActiveCeo(
+            s.ceoAgents.map((c) => (c.id === id ? { ...c, ...patch, updatedAt: Date.now() } : c)),
+          ),
+        })),
+
+      deleteCeo: (id) => set((s) => ({ ceoAgents: s.ceoAgents.filter((c) => c.id !== id) })),
+
+      setActiveCeo: (id, enabled) =>
+        set((s) => ({
+          ceoAgents: s.ceoAgents.map((c) =>
+            c.id === id
+              ? { ...c, enabled, updatedAt: Date.now() }
+              : enabled
+                ? { ...c, enabled: false } // only one CEO active at a time
+                : c,
           ),
         })),
 

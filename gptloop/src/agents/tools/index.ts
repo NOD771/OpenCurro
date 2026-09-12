@@ -47,6 +47,9 @@ import { getTeamMembersStatusTool } from "./get_team_members_status.js";
 import { sendMessageToTeamTool } from "./send_message_to_team.js";
 import { listAgentTeamMembersTool } from "./list_agent_team_members.js";
 import { messageTeamLeaderTool } from "./message_team_leader.js";
+import { assignTasksToTeamsTool } from "./assign_tasks_to_teams.js";
+import { listTeamsTool } from "./list_teams.js";
+import { reportTaskCompletionToCeoTool } from "./report_task_completion_to_ceo.js";
 
 export { ToolRegistry } from "./registry.js";
 export type {
@@ -117,14 +120,24 @@ export { getTeamMembersStatusTool } from "./get_team_members_status.js";
 export { sendMessageToTeamTool } from "./send_message_to_team.js";
 export { listAgentTeamMembersTool } from "./list_agent_team_members.js";
 export { messageTeamLeaderTool } from "./message_team_leader.js";
+export { assignTasksToTeamsTool } from "./assign_tasks_to_teams.js";
+export { listTeamsTool } from "./list_teams.js";
+export { reportTaskCompletionToCeoTool } from "./report_task_completion_to_ceo.js";
 export {
   TEAM_TOOL_NAMES,
+  CEO_TOOL_NAMES,
+  ALL_MULTI_AGENT_TOOL_NAMES,
   isTeamTool,
+  isCeoTool,
   allowedTeamAgentTools,
+  allowedCeoAgentTools,
   LEADER_TEAM_TOOLS,
   MEMBER_TEAM_TOOLS,
   OPTIONAL_TEAM_TOOL,
+  CEO_AGENT_TOOLS,
+  CEO_LEADER_TOOL,
 } from "./teamTools.js";
+export type { CeoAgentRole } from "./teamTools.js";
 export type { AttachedFileInfo, AttachFileFailure } from "./attachFiles.js";
 export { shellViewTool } from "./shellView.js";
 export { bashWriteToProcessTool } from "./bashWriteToProcess.js";
@@ -187,6 +200,9 @@ export function createToolRegistry(): ToolRegistry {
     sendMessageToTeamTool,
     listAgentTeamMembersTool,
     messageTeamLeaderTool,
+    assignTasksToTeamsTool,
+    listTeamsTool,
+    reportTaskCompletionToCeoTool,
   ]);
 }
 
@@ -239,4 +255,7 @@ export const tools = {
   sendMessageToTeamTool,
   listAgentTeamMembersTool,
   messageTeamLeaderTool,
+  assignTasksToTeamsTool,
+  listTeamsTool,
+  reportTaskCompletionToCeoTool,
 };
