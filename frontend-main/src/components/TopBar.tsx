@@ -1,4 +1,4 @@
-import { Plus, Settings, ListTodo, Paperclip, Brain, History, Boxes } from "lucide-react";
+import { Plus, Settings, ListTodo, Paperclip, Brain, History, Boxes, Crown } from "lucide-react";
 import { useStore, type Section } from "@/store/useStore";
 import { cn } from "@/utils/cn";
 
@@ -14,6 +14,8 @@ function contextLabel(section: Section, counts: Record<string, number>): string 
       return `${counts.skills} skill${counts.skills === 1 ? "" : "s"}`;
     case "teams":
       return `${counts.teams} team${counts.teams === 1 ? "" : "s"}`;
+    case "ceo":
+      return `${counts.ceo} CEO${counts.ceo === 1 ? "" : "s"}`;
     case "customagents":
       return `${counts.customagents} agent${counts.customagents === 1 ? "" : "s"}`;
     case "systemprompts":
@@ -38,6 +40,8 @@ export function TopBar() {
   const todos = useStore((s) => s.todos);
   const attachedFiles = useStore((s) => s.attachedFiles);
   const agentTeams = useStore((s) => s.agentTeams);
+  const ceoAgents = useStore((s) => s.ceoAgents);
+  const settings = useStore((s) => s.settings);
   const customAgents = useStore((s) => s.customAgents);
   const activeCustomAgentId = useStore((s) => s.activeCustomAgentId);
   const mainAgentPrompts = useStore((s) => s.mainAgentPrompts);
@@ -48,11 +52,18 @@ export function TopBar() {
     agents: subAgents.length,
     skills: skills.length,
     teams: agentTeams.length,
+    ceo: ceoAgents.length,
     customagents: customAgents.length,
     systemprompts: mainAgentPrompts.length,
   });
   const isChat = section === "chat";
   const activeAgent = customAgents.find((a) => a.id === activeCustomAgentId) ?? null;
+  // The active CEO (only when the CEO feature is on and no Custom Agent overrides it) — the first
+  // message of a chat goes to this CEO agent.
+  const activeCeoAgent =
+    settings.enableCeoAgents === "yes" && !activeAgent
+      ? (ceoAgents.find((c) => c.enabled) ?? null)
+      : null;
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between px-6 max-[640px]:px-4">
@@ -68,6 +79,18 @@ export function TopBar() {
           >
             <Boxes className="h-3.5 w-3.5 shrink-0 text-[var(--secondary)]" />
             <span className="truncate max-w-[10rem]">{activeAgent.name}</span>
+          </button>
+        )}
+        {/* Which CEO the chat runs under (only shown when a CEO is active and no Custom Agent). */}
+        {activeCeoAgent && (
+          <button
+            type="button"
+            onClick={() => setSection("ceo")}
+            title={`Chatting with your CEO agent "${activeCeoAgent.name}". Click to manage CEO agents.`}
+            className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-[var(--chip)] px-2.5 py-1 text-xs font-medium text-[var(--muted)] transition-colors hover:bg-[var(--chip-hover)] hover:text-[var(--fg)]"
+          >
+            <Crown className="h-3.5 w-3.5 shrink-0 text-[var(--secondary)]" />
+            <span className="truncate max-w-[10rem]">{activeCeoAgent.name}</span>
           </button>
         )}
       </div>

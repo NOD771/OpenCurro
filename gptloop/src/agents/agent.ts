@@ -26,7 +26,7 @@ import { createMemoryRuntime } from "./memory.js";
 import { createKnowledgeRuntime } from "./knowledge.js";
 import type { KnowledgeFile, MemoryFile, MemoryRuntime, TodoItem } from "./tools/types.js";
 import type { MemoryAgentService } from "./memoryagent/index.js";
-import { TEAM_TOOL_NAMES } from "./tools/teamTools.js";
+import { ALL_MULTI_AGENT_TOOL_NAMES } from "./tools/teamTools.js";
 
 export interface RunAgentRequest {
   chatId: string;
@@ -108,11 +108,12 @@ const SESSION_REUSE_TOOLS: readonly string[] = [
 ];
 
 /**
- * The five multi-agent collaboration tools are ONLY for agents inside an active team (see the
- * multiagent runtime). The normal single agent never sees them nor their guidance — it has no
- * `team` runtime, so they would be unusable anyway; hiding them keeps the single-agent surface clean.
+ * The multi-agent collaboration tools (the five team tools plus the three CEO tools) are ONLY for
+ * agents inside an active team or CEO system (see the multiagent runtime). The normal single agent
+ * never sees them nor their guidance — it has no `team`/`ceo` runtime, so they would be unusable
+ * anyway; hiding them keeps the single-agent surface clean.
  */
-const TEAM_TOOLS: readonly string[] = TEAM_TOOL_NAMES;
+const TEAM_TOOLS: readonly string[] = ALL_MULTI_AGENT_TOOL_NAMES;
 
 export class AgentRunner {
   constructor(

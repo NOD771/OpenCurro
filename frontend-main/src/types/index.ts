@@ -229,6 +229,41 @@ export interface AgentTeam {
 }
 
 /**
+ * A user-created CEO agent, stored in the backend SQLite database (app_state `ceoAgents`).
+ *
+ * A CEO agent is a TOP-LEVEL coordinator that controls the head/leaders of several agent teams. When
+ * a CEO is active, the FIRST user prompt goes to the CEO; the CEO assigns tasks to the leaders of the
+ * teams it controls, each leader breaks the work down for their own members, members report to their
+ * leader, and leaders report completion back to the CEO. Only one CEO may be active (enabled) at a
+ * time — exactly like agent teams.
+ */
+export interface CeoAgent {
+  id: string;
+  /** Human-readable CEO name / agent id (required). */
+  name: string;
+  /** Short description of the CEO's role. */
+  description: string;
+  /** The CEO's system prompt (used verbatim as its system prompt). */
+  systemPrompt: string;
+  /** The ids of the agent teams this CEO controls (references AgentTeam.id). */
+  teamIds: string[];
+  /** Whether this CEO is the active one used for chat turns (only one CEO is active at a time). */
+  enabled: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** CEO-agent definition in the backend/wire format sent with a turn when a CEO agent is active. */
+export interface BackendCeo {
+  id: string;
+  name: string;
+  description: string;
+  system_prompt: string;
+  /** The full team definitions this CEO controls (resolved from the selected team ids). */
+  teams: BackendTeam[];
+}
+
+/**
  * A user-created Custom Agent, stored in the backend SQLite database (app_state `customAgents`).
  *
  * A Custom Agent is a TOP-LEVEL, independently-configured Main Agent — NOT a sub-agent, child agent,
@@ -652,6 +687,12 @@ export interface Settings {
    * agent-to-agent messaging). "no" (default) hides it; "yes" enables direct teammate messaging.
    */
   enableSendMessageToTeam: "no" | "yes";
+  /**
+   * Whether the CEO multi-agent system is enabled. "no" (default) means chat turns use the normal
+   * single agent (or an active team). "yes" routes turns through the active CEO agent, which controls
+   * the head/leaders of the teams it manages. Takes precedence over an active team when both are on.
+   */
+  enableCeoAgents: "no" | "yes";
 }
 
 /** The four built-in reasoning-effort presets shown in Settings. */
@@ -698,6 +739,11 @@ export interface StreamRequest {
   agent_team?: BackendTeam;
   /** Mirrors settings.enableSendMessageToTeam; gates the send_message_to_team tool this turn. */
   enable_send_message_to_team?: "no" | "yes";
+  /** When true, run this turn as a CEO multi-agent system (with ceo_agent). Takes precedence over
+   * ordinary team mode: the first user prompt goes to the CEO agent. */
+  ceo_mode?: boolean;
+  /** The active CEO agent definition (CEO + controlled teams) sent when ceo_mode is true. */
+  ceo_agent?: BackendCeo;
   /**
    * The active Custom Agent (a top-level, user-created Main Agent) for this turn. When present, the
    * turn runs as that independent agent — its own system prompt + selected tools. Absent when the

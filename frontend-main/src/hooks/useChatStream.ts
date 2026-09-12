@@ -6,6 +6,7 @@ import { dispatchStreamEvent } from "@/lib/streamDispatch";
 import { attachLatestMemoryAgentRun } from "@/lib/memoryAgent";
 import { CUSTOM_PROVIDER_PREFIX, toCustomProviderConfig } from "@/lib/providers";
 import { activeTeam } from "@/lib/defaultTeams";
+import { activeCeo, toBackendCeo } from "@/lib/defaultCeo";
 import { findActiveCustomAgent, toBackendCustomAgent } from "@/lib/customAgents";
 import { findActiveMainAgentPrompt } from "@/lib/mainAgentPrompts";
 import { useStore, type ActiveRun } from "@/store/useStore";
@@ -87,9 +88,16 @@ function buildStartRequest(convId: string, text: string): StreamRequest {
       ? activeMainPrompt.content
       : undefined;
 
+  // CEO multi-agent mode: when enabled and a CEO is active, route the turn through the CEO agent,
+  // which controls the head/leaders of the teams it manages. Disabled while a Custom Agent is active;
+  // takes precedence over ordinary team mode. Only engages when the CEO resolves to ≥1 valid team.
+  const ceoEnabled = settings.enableCeoAgents === "yes" && !backendCustomAgent;
+  const ceo = ceoEnabled ? activeCeo(store.ceoAgents) : null;
+  const backendCeo = ceo ? toBackendCeo(ceo, store.agentTeams) : null;
+
   // Multi-agent team mode: when enabled and a team is active, route the turn through the team head.
-  // Disabled while a Custom Agent is active.
-  const teamsEnabled = settings.enableAgentTeams === "yes" && !backendCustomAgent;
+  // Disabled while a Custom Agent or an active CEO is running.
+  const teamsEnabled = settings.enableAgentTeams === "yes" && !backendCustomAgent && !backendCeo;
   const team = teamsEnabled ? activeTeam(store.agentTeams) : null;
   const backendTeam = team
     ? {
@@ -135,6 +143,8 @@ function buildStartRequest(convId: string, text: string): StreamRequest {
     multi_agent: Boolean(backendTeam),
     agent_team: backendTeam,
     enable_send_message_to_team: settings.enableSendMessageToTeam === "yes" ? "yes" : "no",
+    ceo_mode: Boolean(backendCeo),
+    ceo_agent: backendCeo ?? undefined,
     custom_agent: backendCustomAgent,
     system_prompt_override: systemPromptOverride,
   };

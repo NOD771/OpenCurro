@@ -350,6 +350,58 @@ export interface TeamRuntime {
     messages: Array<{ agent_id: string; message: string }>,
     kind: "delegate" | "message" | "to_leader",
   ): TeamDeliveryResult;
+  /**
+   * True when this team is operating UNDER a CEO agent (the CEO multi-agent mode). Only then does the
+   * team leader see and use the report_task_completion_to_ceo tool and its guidance; in the normal
+   * team mode this is false/undefined and that tool is hidden.
+   */
+  readonly inCeoMode?: boolean;
+  /** Id (name) of the CEO agent this team reports to (present only in CEO mode). */
+  readonly ceoId?: string;
+  /**
+   * Report a completed task up to the CEO agent (CEO mode only). The summary is appended to the CEO's
+   * EXISTING conversation via its mailbox — no new session is created. If the CEO is busy the report
+   * waits in the queue and is delivered together with any other pending reports when the CEO is next
+   * free (exactly like a member reporting to a team leader in the normal multi-agent system).
+   */
+  reportToCeo?(summary: string): TeamDeliveryResult;
+}
+
+/**
+ * A single team as surfaced to the CEO by list_teams — the team's name, its head/leader id, and its
+ * specialist members (name + description only; no system prompts are exposed).
+ */
+export interface CeoTeamInfo {
+  /** Stable team id. */
+  team_id: string;
+  /** Human-readable team name. */
+  team_name: string;
+  /** The head/leader's agent id (the id the CEO passes to assign_tasks_to_teams). */
+  team_leader: string;
+  /** The specialist members of this team. */
+  members: Array<{ name: string; description: string }>;
+}
+
+/**
+ * Runtime bridge injected into the ToolContext for the CEO agent's tool calls so its two tools
+ * (assign_tasks_to_teams, list_teams) can enumerate the teams it controls and delegate tasks to the
+ * teams' head/leaders. Present ONLY when the tool call belongs to the CEO agent running inside an
+ * active CEO multi-agent system; absent for the single agent, sub-agents, and ordinary team agents.
+ * Delivering a task never spawns a new session — it appends to the target team leader's EXISTING
+ * conversation (via its mailbox), so a leader the CEO re-activates keeps its full prior context.
+ */
+export interface CeoRuntime {
+  /** Id (name) of the CEO agent whose tool call is executing. */
+  readonly selfId: string;
+  /** All teams the CEO controls, with each team's name, leader id, and members (+descriptions). */
+  listTeams(): CeoTeamInfo[];
+  /**
+   * Assign one task prompt to each named team leader/head. Each prompt is framed so the leader knows
+   * the task comes from the CEO and must report completion back to the CEO. Independent teams can be
+   * assigned tasks in a single call; the leaders then run on their own and report back. Returns which
+   * team leaders were reached and which names were unknown.
+   */
+  assignTasks(tasks: Array<{ team_leader: string; prompt: string }>): TeamDeliveryResult;
 }
 
 /** Status a todo can be in. */
@@ -476,6 +528,11 @@ export interface ToolContext {
    * member) running inside an active agent team. Absent for the normal single agent and sub-agents,
    * which is why the five team collaboration tools are unavailable outside a team. */
   team?: TeamRuntime;
+  /** CEO multi-agent runtime — present ONLY when the tool call belongs to the CEO agent running
+   * inside an active CEO multi-agent system. Absent for the single agent, sub-agents, and ordinary
+   * team agents, which is why the CEO tools (assign_tasks_to_teams, list_teams) are unavailable
+   * outside the CEO mode. */
+  ceo?: CeoRuntime;
   /** Id of the tool call currently executing; used to correlate nested sub-agent events in the UI. */
   toolCallId?: string;
   /**
